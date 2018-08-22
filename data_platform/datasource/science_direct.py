@@ -1,56 +1,80 @@
-"""data source class for reading ScienceDirect XML response
-"""
+"""Data source class for reading ScienceDirect XML response."""
 
 import os
 import sys
-import typing as tg
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Generator, List, Optional, Text, Tuple, cast
+from typing import Dict, Iterable, List, NoReturn, Optional, Text, Tuple, Union
 
 from lxml import etree
 
-from . import base as _base
 from .. import document as _doc
 from ..config import ConfigManager
+from ..document import Document, DocumentSet, Element
+from .abc.doc import DocDataSource, DocFactory, DocKeyPair, DocKeyType, DocValDict
+from .exception import NotSupportedError
 
 
-def _cast_element(var: tg.Any):
-    """cast a value's type annotation to etree.Element
-    """
-    return cast(etree.Element, var)
+class ScienceDirectFactory(DocFactory):
+    @classmethod
+    def pack(cls, doc_dict: DocValDict) -> Document:
+        # root
+        root = doc_dict["root"]
+        root_node = _doc.Root.from_dict(root)
+
+        # metadata
+        meta_out = {}
+        metadatas = doc_dict["metadata"]
+        for metadata in metadatas:
+            meta_name = metadata["meta_name"]
+            meta = metadata["meta"]
+            meta_out[meta_name] = _doc.MetaData.from_dict(meta)
+
+        return Document(root_node, meta_out)
+
+    @classmethod
+    def unpack(cls, doc: Document) -> DocValDict:
+        result = {}
+
+        root_object = doc.root
+        result['root'] = root_object.to_dict()
+
+        metadatas = doc.metadatas
+        result['metadata'] = [{
+            "meta_name": meta_name,
+            "meta": metadata.to_dict(),
+        } for meta_name, metadata in metadatas.items()]
+
+        return result
 
 
-class ScienceDirectDS(_base.DocDataSource):
-    """data source class for reading ScienceDirect XML response
-    """
+class ScienceDirectDS(DocDataSource):
+    """Data source class for reading ScienceDirect XML response."""
 
     def __init__(self, config: ConfigManager, *args, **kwargs) -> None:
         super().__init__(config, *args, **kwargs)
 
         path = Path(config.check_get(["init", "location"]))
 
-        self._file_list = self._path_check(path)
-
         self._path = path
         self._mtime = 0.0
+        self._doc_factory: Optional[DocFactory] = None
+        self._data: Dict[Text, Dict] = {}
+
+        self._load()
 
     @staticmethod
-    def _path_check(path: Path) -> List[Path]:
+    def _xml_files(path: Path) -> List[Path]:
         if not path.exists():
-            raise ValueError("The source path is not exist: " f"{str(path)}")
+            raise ValueError(f"The source path is not exist: {str(path)}")
 
-        if path.is_file():
-            file_list = [path]
-        elif path.is_dir():
-            file_list = sorted(path.rglob("*.xml"))
-        else:
-            raise ValueError("The source path is neither a file nor a directory: " f"{str(path)}")
+        if path.is_dir():
+            return list(path.rglob("*.xml"))
 
-        return file_list
+        return []
 
     @staticmethod
-    def _find_with_ns(node: etree.Element, query: Text) -> Optional[etree.Element]:
+    def _find_with_ns(node: etree.Element, query: Text) -> Union[None, etree.Element, Iterable[etree.Element]]:
         return node.find(query, node.nsmap)
 
     def _load(self) -> None:
@@ -59,12 +83,10 @@ class ScienceDirectDS(_base.DocDataSource):
         if mtime != self._mtime:
             # the directory is new, reload
             self._mtime = mtime
-            self._file_list = self._path_check(self._path)
-            self._parsed_doclist: List[_doc.Document] = []
-            for i, xmlfile in enumerate(self._file_list):
+            for xmlfile in self._xml_files(self._path):
                 try:
-                    parsed = self._parse_one(xmlfile, i)
-                    self._parsed_doclist.append(parsed)
+                    parsed = self._parse_one(xmlfile)
+                    self._data[xmlfile.stem] = ScienceDirectFactory.unpack(parsed)
                 except ValueError as e:
                     print(f"Parsing file {str(xmlfile.name)} error: ", e, file=sys.stderr)
 
@@ -76,40 +98,32 @@ class ScienceDirectDS(_base.DocDataSource):
         else:
             return tag
 
-    def _parse_body(self, body: etree.Element, doc_id: int) -> Tuple[List[_doc.Section], Dict[Text, List[Text]]]:
+    def _parse_body(self, body: etree.Element) -> Tuple[List[_doc.Section], Dict[Text, Element]]:
 
-        bibid2paraid: Dict[Text, List[Text]] = defaultdict(list)
+        bibid2para: Dict[Text, List[Element]] = defaultdict(list)
 
-        sections = _cast_element(self._find_with_ns(body, 'ce:sections'))
+        sections = self._find_with_ns(body, 'ce:sections')
+        if sections is None:
+            raise ValueError('There is no sections in file')
+
         nsmap = sections.nsmap
         sec_list: List[_doc.Section] = []
         for sec in sections.iterfind('ce:section', nsmap):
-            sec_attr = {**sec.attrib}
-            sec_attr['doc_id'] = doc_id
-
             # section-title
             sec_title = sec.find('ce:section-title', nsmap)
             title_para = _doc.Paragraph([_doc.Text(sec_title.text.strip())], **sec_title.attrib)
             # paragraph
             para_list: List[_doc.Paragraph] = [title_para]
-            sec_elem = _doc.Section([], section_title=sec_title.text, **sec_attr)
-            for para_id, para in enumerate(sec.iterfind('ce:para', nsmap)):
-                para_attr = {**para.attrib}
-                para_attr['doc_id'] = doc_id
-                para_attr['parent'] = sec_elem
-                if 'id' not in para_attr:
-                    para_attr['id'] = f'para{para_id}'
-
+            sec_elem = _doc.Section([], section_title=sec_title.text, **sec.attrib)
+            for para in sec.iterfind('ce:para', nsmap):
                 inline_list: List[_doc.Inline] = []
                 inline_list.append(_doc.Text(para.text.strip()))
-                para_elem = _doc.Paragraph([], **para_attr)
+                para_elem = _doc.Paragraph([], **para.attrib)
 
                 for child in para:
                     raw_tag = self._tag_without_ns(child.tag)
 
                     attrib = {**child.attrib}
-                    attrib['doc_id'] = doc_id
-                    attrib['parent'] = para_elem
 
                     # crossref
                     if raw_tag.startswith('cross-ref'):
@@ -125,7 +139,7 @@ class ScienceDirectDS(_base.DocDataSource):
                             attrib['refid'] = [attrib['refid']]
 
                         for bibid in attrib['refid']:
-                            bibid2paraid[bibid].append(para_attr['id'])
+                            bibid2para[bibid].append(para_elem)
                     else:
                         # other
                         text = child.text.strip() if child.text else ""
@@ -134,15 +148,15 @@ class ScienceDirectDS(_base.DocDataSource):
                     inline_list.append(tag)
 
                     if child.tail:
-                        inline_list.append(_doc.Text(child.tail.rstrip(), parent=para_elem))
+                        inline_list.append(_doc.Text(child.tail.rstrip()))
 
                 para_elem.set_content(inline_list)
                 para_list.append(para_elem)
             sec_elem.set_content(para_list)
             sec_list.append(sec_elem)
-        return sec_list, bibid2paraid
+        return sec_list, bibid2para
 
-    def _parse_tail(self, tail: etree.Element, doc_id: int) -> _doc.MetaData:
+    def _parse_tail(self, tail: etree.Element) -> _doc.MetaData:
         bib = self._find_with_ns(tail, 'ce:bibliography')
 
         if bib is None:
@@ -151,7 +165,9 @@ class ScienceDirectDS(_base.DocDataSource):
         attr = {**bib.attrib}
 
         # section-title
-        title = _cast_element(self._find_with_ns(bib, 'ce:section-title'))
+        title = self._find_with_ns(bib, 'ce:section-title')
+        if title is None:
+            raise ValueError('No section-title')
 
         title_attr = {**title.attrib}
         title_attr['text'] = title.text.rstrip()
@@ -159,7 +175,9 @@ class ScienceDirectDS(_base.DocDataSource):
         attr['section-title'] = title_attr
 
         # bib-sec
-        bib_sec = _cast_element(self._find_with_ns(bib, 'ce:bibliography-sec'))
+        bib_sec = self._find_with_ns(bib, 'ce:bibliography-sec')
+        if bib_sec is None:
+            raise ValueError('No bibliography-sec')
         bibsec_attr = {**bib_sec.attrib}
 
         nsmap = bib_sec.nsmap
@@ -167,7 +185,9 @@ class ScienceDirectDS(_base.DocDataSource):
         for bib_ref in bib_sec.iterfind('ce:bib-reference', nsmap):
             ref_dict = {**bib_ref.attrib}
 
-            label = _cast_element(self._find_with_ns(bib_ref, 'ce:label'))
+            label = self._find_with_ns(bib_ref, 'ce:label')
+            if label is None:
+                raise ValueError('No ce:label')
             ref_dict['label'] = label.text.strip()
 
             ref = self._find_with_ns(bib_ref, 'sb:reference')
@@ -198,7 +218,9 @@ class ScienceDirectDS(_base.DocDataSource):
                         if tag.endswith('issue'):
                             issue = host_child
 
-                            series = cast(Generator[etree.Element, None, None], self._find_with_ns(issue, 'sb:series'))
+                            series = self._find_with_ns(issue, 'sb:series')
+                            if not isinstance(series, Iterable):
+                                raise ValueError('sb:series error.')
 
                             for series_child in series:
                                 raw_tag = self._tag_without_ns(series_child.tag)
@@ -210,7 +232,9 @@ class ScienceDirectDS(_base.DocDataSource):
                                 else:
                                     ref_dict[self._tag_without_ns(series_child.tag)] = series_child.text.strip()
 
-                            date = _cast_element(self._find_with_ns(issue, 'sb:date'))
+                            date = self._find_with_ns(issue, 'sb:date')
+                            if date is None:
+                                raise ValueError('No sb:date')
                             ref_dict['date'] = date.text.strip()
                         elif tag.endswith('pages'):
                             pages = host_child
@@ -223,7 +247,9 @@ class ScienceDirectDS(_base.DocDataSource):
 
             other_ref = self._find_with_ns(bib_ref, 'ce:other-ref')
             if other_ref is not None:
-                textref = _cast_element(self._find_with_ns(other_ref, 'ce:textref'))
+                textref = self._find_with_ns(other_ref, 'ce:textref')
+                if textref is None:
+                    raise ValueError('No textref in other-ref')
                 ref_dict['textref'] = textref.text.strip()
 
             refs[ref_dict['id']] = ref_dict
@@ -231,9 +257,9 @@ class ScienceDirectDS(_base.DocDataSource):
         bibsec_attr['references'] = refs
         attr['bibbliography-section'] = bibsec_attr
 
-        return _doc.MetaData("bibliography", attr)
+        return _doc.MetaData(attr)
 
-    def _parse_one(self, xmlfile: Path, index: int) -> _doc.Document:
+    def _parse_one(self, xmlfile: Path) -> Document:
         tree = etree.parse(str(xmlfile))
         root = tree.getroot()
 
@@ -249,7 +275,7 @@ class ScienceDirectDS(_base.DocDataSource):
         for child in coredata:
             text = child.text
             coredata_attr[self._tag_without_ns(child.tag)] = text.strip() if text else ""
-        coremeta = _doc.MetaData('coredata', coredata_attr)
+        coremeta = _doc.MetaData(coredata_attr)
         doc_meta['coredata'] = coremeta
 
         # originalText
@@ -271,11 +297,11 @@ class ScienceDirectDS(_base.DocDataSource):
         if body is None:
             raise ValueError('Source file has no body')
 
-        sec_list, bib2para = self._parse_body(body, index)
+        sec_list, bib2para = self._parse_body(body)
         doc_root = _doc.Root(sec_list)
 
-        bibid2paraid = _doc.MetaData('bibid_to_paraid', bib2para)
-        doc_meta['bib2para'] = bibid2paraid
+        bibid2para = _doc.MetaData(bib2para)
+        doc_meta['bib2para'] = bibid2para
 
         # tail
         tail = self._find_with_ns(article, 'tail')
@@ -283,32 +309,53 @@ class ScienceDirectDS(_base.DocDataSource):
         if tail is None:
             raise ValueError('Source file has no tail')
 
-        references = self._parse_tail(tail, index)
+        references = self._parse_tail(tail)
         doc_meta['references'] = references
 
-        return _doc.Document(doc_root, doc_meta)
+        return Document(doc_root, doc_meta)
 
-    def __del__(self) -> None:
-        """Close the file and do other cleaning
-        """
-        pass
+    def create_doc(self, key: DocKeyType, val: DocValDict) -> NoReturn:
+        raise NotSupportedError("ScienceDirectDS is read-only.")
 
-    def create_doc(self, key: Dict, val: Dict):
-        raise _base.NotSupportedError("ScienceDirectDS is read-only, only read_doc is provided")
-
-    def read_doc(self, key: Dict):
-        # Todo: implement key operation
+    def read_doc(self, key: DocKeyType = ('@*', '@*'), doc_factory: Optional[DocFactory] = None) -> Union[Dict[DocKeyPair, DocValDict], DocumentSet]:
         self._load()
-        return _doc.DocumentSet(self._parsed_doclist)
 
-    def update_doc(self, key: Dict, val: Dict):
-        raise _base.NotSupportedError("ScienceDirectDS is read-only, only read_doc is provided")
+        ds_d_c: List[Tuple] = []
+        if isinstance(key, tuple):
+            ds_d_c.append((key[0], key[1], None))
 
-    def delete_doc(self, key: Dict):
-        raise _base.NotSupportedError("ScienceDirectDS is read-only, only read_doc is provided")
+        if isinstance(key, list):
+            for ds, d in key:
+                ds_d_c.append((ds, d, None))
 
-    def query(self, query: str, data: Dict):
-        raise _base.NotSupportedError("ScienceDirectDS has no query method")
+        if isinstance(key, dict):
+            for (ds, d), c in key.items():
+                ds_d_c.append((ds, d, c))
 
+        doc_names = set()
+        for docset_name, doc_name, _ in ds_d_c:
+            if docset_name not in ('@*', '_default'):
+                print("Warning: ScienceDirectDS doesn't support multi-documentsets, all but '_default' will be converted to '@*'.", file=sys.stderr)
 
-_base.DataSourceFactory.register("sciencedirect", ScienceDirectDS)
+            if doc_name.startswith('@*'):
+                for d_name in self._data:
+                    # TODO: doc wildcards and filters
+                    doc_names.add(d_name)
+            else:
+                doc_names.add(doc_name)
+
+        result = {DocKeyPair('_default', doc_name): self._data[doc_name] for doc_name in doc_names}
+
+        if doc_factory is not None:
+            return DocumentSet({doc_key: doc_factory.pack(doc_dict) for doc_key, doc_dict in result.items()})
+
+        return result
+
+    def update_doc(self, key: DocKeyType, val: DocValDict) -> NoReturn:
+        raise NotSupportedError("ScienceDirectDS is read-only.")
+
+    def delete_doc(self, key: DocKeyType) -> NoReturn:
+        raise NotSupportedError("ScienceDirectDS is read-only.")
+
+    def query(self, query: Text, *args, **kwargs) -> NoReturn:
+        raise NotSupportedError("ScienceDirectDS has no query method.")
