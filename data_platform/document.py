@@ -177,8 +177,7 @@ class Root(Element):
         subsec_list = list(chain.from_iterable(sec.get_subsections() for sec in self.sections))
         if subsec_list:
             return subsec_list
-        else:
-            return self.sections
+        return self.sections
 
     def add_section(self, section: 'Section') -> None:
         self.sections.append(section)
@@ -304,15 +303,13 @@ class Section(Box):
         sec_list = [box for box in self.content_list if isinstance(box, Section)]
         if sec_list:
             return list(chain.from_iterable(box.get_subsections() for box in self.content_list if isinstance(box, Section)))
-        else:
-            return []
+        return []
 
     def get_paragraphs(self) -> tg.List['Paragraph']:
         para_list = [box for box in self.content_list if isinstance(box, Paragraph)]
         if para_list:
             return para_list
-        else:
-            return list(chain.from_iterable(box.get_paragraphs() for box in self.content_list if isinstance(box, Section)))
+        return list(chain.from_iterable(box.get_paragraphs() for box in self.content_list if isinstance(box, Section)))
 
 
 class Paragraph(Box):

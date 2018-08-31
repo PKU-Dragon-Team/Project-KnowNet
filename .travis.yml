@@ -1,0 +1,7 @@
+language: python
+python:
+  - "3.6"
+script:
+  - flake8 data_platform
+  - pylint data_platform
+  - mypy data_platform

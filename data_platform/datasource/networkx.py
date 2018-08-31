@@ -1,15 +1,14 @@
 """data source class for graph storage with NetworkX."""
 
 from pathlib import Path
-from typing import Dict, List, NoReturn, Set, Tuple
+from typing import Dict, List, NoReturn, Optional, Set, Tuple
 
 import networkx as nx
 
 from ..config import ConfigManager
 from .abc.base import ConditionDict
-from .abc.graph import EdgeKeyPair, EdgeKeyType, EdgeNamePair, EdgeValDict
-from .abc.graph import GraphDataSource, GraphKeyType, GraphNameType, GraphType, GraphValType
-from .abc.graph import NodeKeyPair, NodeKeyType, NodeValDict
+from .abc.graph import (EdgeKeyPair, EdgeKeyType, EdgeNamePair, EdgeValDict, GraphDataSource, GraphKeyType, GraphNameType, GraphType, GraphValType, NodeKeyPair,
+                        NodeKeyType, NodeValDict)
 from .exception import NotSupportedError
 
 
@@ -76,11 +75,11 @@ class NetworkXDS(GraphDataSource):
             with graph_file.open('rb') as f:
                 self._data[graph_file.stem] = self._reader(f)
 
-    def flush(self):
+    def flush(self) -> None:
         """Write pending edit to disk files."""
         self._dump()
 
-    def reload(self):
+    def reload(self) -> None:
         """Force reload disk files into memory."""
         self.flush()
         self._load()
@@ -263,7 +262,10 @@ class NetworkXDS(GraphDataSource):
 
         return results
 
-    def create_node(self, key: NodeKeyType = DEFAULT_NODE_KEY, val: NodeValDict = {}) -> List[NodeKeyPair]:
+    def create_node(self, key: NodeKeyType = DEFAULT_NODE_KEY, val: Optional[NodeValDict] = None) -> List[NodeKeyPair]:
+        if val is None:
+            val = {}
+
         target = self._filter_node(key)
 
         results: List = []
@@ -274,7 +276,10 @@ class NetworkXDS(GraphDataSource):
 
         return results
 
-    def create_edge(self, key: EdgeKeyType = DEFAULT_EDGE_KEY, val: EdgeValDict = {}) -> List[EdgeKeyPair]:
+    def create_edge(self, key: EdgeKeyType = DEFAULT_EDGE_KEY, val: Optional[EdgeValDict] = None) -> List[EdgeKeyPair]:
+        if val is None:
+            val = {}
+
         target = self._filter_edge(key)
 
         results: List = []
@@ -329,7 +334,10 @@ class NetworkXDS(GraphDataSource):
 
         return result
 
-    def update_node(self, key: NodeKeyType = DEFAULT_NODE_KEY, val: NodeValDict = {}) -> List[NodeKeyPair]:
+    def update_node(self, key: NodeKeyType = DEFAULT_NODE_KEY, val: Optional[NodeValDict] = None) -> List[NodeKeyPair]:
+        if val is None:
+            val = {}
+
         target = self._filter_node(key)
         result = []
         for graph_name, node_name in target:
@@ -339,7 +347,10 @@ class NetworkXDS(GraphDataSource):
 
         return result
 
-    def update_edge(self, key: EdgeKeyType = DEFAULT_EDGE_KEY, val: EdgeValDict = {}) -> List[EdgeKeyPair]:
+    def update_edge(self, key: EdgeKeyType = DEFAULT_EDGE_KEY, val: Optional[EdgeValDict] = None) -> List[EdgeKeyPair]:
+        if val is None:
+            val = {}
+
         target = self._filter_edge(key)
         result = []
         for graph_name, (node1_name, node2_name) in target:
