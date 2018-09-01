@@ -2,10 +2,10 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Iterable, List, NoReturn, Optional, Set, Text, Tuple, Union, overload
+from typing import Dict, Iterable, List, NoReturn, Optional, Set, Text, Union
 
 from ..config import ConfigManager
-from ..document import Document, DocumentSet
+from ..document import DocumentSet
 from .abc.doc import DocDataSource, DocFactory, DocKeyPair, DocKeyType, DocValDict
 from .exception import NotSupportedError
 
@@ -16,8 +16,8 @@ class JSONDS(DocDataSource):
     support multi-docsets (specify "docset_id" in key)
     """
 
-    _default_doc_key = ('_default', '_default')
-    _wildcard_doc_key = ('@*', '@*')
+    _default_doc_key = DocKeyPair('_default', '_default')
+    _wildcard_doc_key = DocKeyPair('@*', '@*')
 
     def __init__(self, config: ConfigManager, *args, **kwargs) -> None:
         super().__init__(config, *args, **kwargs)
@@ -62,18 +62,7 @@ class JSONDS(DocDataSource):
                 self._data[json_file.stem] = json.load(f)
 
     def _filter(self, key: DocKeyType) -> List[DocKeyPair]:
-        ds_d_c: List[Tuple] = []
-
-        if isinstance(key, tuple):
-            ds_d_c.append((key[0], key[1], None))
-
-        if isinstance(key, list):
-            for ds, d in key:
-                ds_d_c.append((ds, d, None))
-
-        if isinstance(key, dict):
-            for (ds, d), c in key.items():
-                ds_d_c.append((ds, d, c))
+        ds_d_c = self._format_doc_key(key)
 
         result = set()
         for docset_name, doc_name, _ in ds_d_c:
@@ -118,8 +107,11 @@ class JSONDS(DocDataSource):
     def query(self, query: str, *args, **kwargs) -> NoReturn:
         raise NotSupportedError("JSON data source has no query method.")
 
-    def create_doc(self, key: DocKeyType = ('_default', '_default'), val: DocValDict = {}) -> List[DocKeyPair]:
+    def create_doc(self, key: DocKeyType = _default_doc_key, val: Optional[DocValDict] = None) -> List[DocKeyPair]:
         """Create doc in data source."""
+        if val is None:
+            val = {}
+
         result = []
         target = self._filter(key)
 
@@ -132,17 +124,7 @@ class JSONDS(DocDataSource):
 
         return result
 
-    # pylint: disable=function-redefined
-    # flake8: noqa: F811
-    @overload
-    def read_doc(self, key: DocKeyType) -> Dict[DocKeyPair, DocValDict]:
-        ...
-
-    @overload
-    def read_doc(self, key: DocKeyType, doc_factory: DocFactory) -> DocumentSet:
-        ...
-
-    def read_doc(self, key: DocKeyType = ('@*', '@*'), doc_factory: Optional[DocFactory] = None) -> Union[Dict[DocKeyPair, DocValDict], DocumentSet]:
+    def read_doc(self, key: DocKeyType = _wildcard_doc_key, doc_factory: Optional[DocFactory] = None) -> Union[Dict[DocKeyPair, DocValDict], DocumentSet]:
         target = self._filter(key)
         result: Dict[DocKeyPair, DocValDict] = {}
         for ds, d in target:
@@ -153,9 +135,15 @@ class JSONDS(DocDataSource):
         if doc_factory is not None:
             return DocumentSet({kp: doc_factory.pack(d) for kp, d in result.items()})
 
+        if self._doc_factory is not None:
+            return DocumentSet({kp: self._doc_factory.pack(d) for kp, d in result.items()})
+
         return result
 
-    def update_doc(self, key: DocKeyType = ('_default', '_default'), val: DocValDict = {}) -> List[DocKeyPair]:
+    def update_doc(self, key: DocKeyType = _default_doc_key, val: Optional[DocValDict] = None) -> List[DocKeyPair]:
+        if val is None:
+            val = {}
+
         result = []
         target = self._filter(key)
 
@@ -170,7 +158,7 @@ class JSONDS(DocDataSource):
 
         return result
 
-    def delete_doc(self, key: DocKeyType = ('_default', '_default')) -> int:
+    def delete_doc(self, key: DocKeyType = _default_doc_key) -> int:
         result = 0
         target = self._filter(key)
 

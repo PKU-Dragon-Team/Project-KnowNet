@@ -5,8 +5,8 @@ Support multiple tables (datasets)
 
 import json
 import sqlite3
-from typing import Dict, List, Set, Text, Tuple, Generator
 from contextlib import contextmanager
+from typing import Any, Dict, Generator, List, Set, Text, Tuple
 
 from ..config import ConfigManager
 from .abc.row import RowDataSource, RowKeyPair, RowKeyType, RowValDict
@@ -15,7 +15,7 @@ from .abc.row import RowDataSource, RowKeyPair, RowKeyType, RowValDict
 class SQLiteDS(RowDataSource):
     """Class of SQLite Data Source."""
 
-    CONFIG_SCHEMA = {"init": {"location": {}}}
+    CONFIG_SCHEMA: Dict[Text, Any] = {"init": {"location": {}}}
 
     def __init__(self, config: ConfigManager, *args, **kwargs) -> None:
         """Initialize the data source.
@@ -63,7 +63,7 @@ class SQLiteDS(RowDataSource):
         elif isinstance(key, dict):
             table_row_con.extend((k[0], k[1], con) for k, con in key.items())
 
-        result = []
+        result: List[RowKeyPair] = []
         for table_name, row_name, _ in table_row_con:
             if table_name.startswith('@*'):
                 # TODO: table filters
@@ -95,7 +95,7 @@ class SQLiteDS(RowDataSource):
             conn.commit()
         return result
 
-    def read_row(self, key: RowKeyType = ('@*', '@*')) -> Dict[RowKeyPair, RowValDict]:
+    def read_row(self, key: RowKeyType = RowKeyPair('@*', '@*')) -> Dict[RowKeyPair, RowValDict]:
         result = {}
         target = self._filter(key)
         with self.connect() as conn:

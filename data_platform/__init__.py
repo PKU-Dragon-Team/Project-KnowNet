@@ -1,3 +1,4 @@
-"""Package for utility classes and functions
+"""Package for utility classes and functions.
+
 Current containing classes for reading data sources
 """

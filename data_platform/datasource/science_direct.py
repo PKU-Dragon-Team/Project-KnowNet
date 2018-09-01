@@ -4,7 +4,7 @@ import os
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Iterable, List, NoReturn, Optional, Text, Tuple, Union
+from typing import Any, Dict, Iterable, List, NoReturn, Optional, Text, Tuple, Union
 
 from lxml import etree
 
@@ -34,7 +34,7 @@ class ScienceDirectFactory(DocFactory):
 
     @classmethod
     def unpack(cls, doc: Document) -> DocValDict:
-        result = {}
+        result: Dict[Text, Any] = {}
 
         root_object = doc.root
         result['root'] = root_object.to_dict()
@@ -95,16 +95,18 @@ class ScienceDirectDS(DocDataSource):
         if '}' in tag:
             end = tag.find('}')
             return tag[end + 1:]
-        else:
-            return tag
+        return tag
 
-    def _parse_body(self, body: etree.Element) -> Tuple[List[_doc.Section], Dict[Text, Element]]:
+    def _parse_body(self, body: etree.Element) -> Tuple[List[_doc.Section], Dict[Text, List[Element]]]:
 
         bibid2para: Dict[Text, List[Element]] = defaultdict(list)
 
         sections = self._find_with_ns(body, 'ce:sections')
         if sections is None:
             raise ValueError('There is no sections in file')
+
+        if not isinstance(sections, etree.Element):
+            raise ValueError('There are more than one sections')
 
         nsmap = sections.nsmap
         sec_list: List[_doc.Section] = []
@@ -162,12 +164,18 @@ class ScienceDirectDS(DocDataSource):
         if bib is None:
             raise ValueError('Source file has no bibliography')
 
+        if not isinstance(bib, etree.Element):
+            raise ValueError('More than one bibliography')
+
         attr = {**bib.attrib}
 
         # section-title
         title = self._find_with_ns(bib, 'ce:section-title')
         if title is None:
             raise ValueError('No section-title')
+
+        if not isinstance(title, etree.Element):
+            raise ValueError('More than one title')
 
         title_attr = {**title.attrib}
         title_attr['text'] = title.text.rstrip()
@@ -178,6 +186,8 @@ class ScienceDirectDS(DocDataSource):
         bib_sec = self._find_with_ns(bib, 'ce:bibliography-sec')
         if bib_sec is None:
             raise ValueError('No bibliography-sec')
+        if not isinstance(bib_sec, etree.Element):
+            raise ValueError('More than one bibliography-sec')
         bibsec_attr = {**bib_sec.attrib}
 
         nsmap = bib_sec.nsmap
@@ -188,6 +198,8 @@ class ScienceDirectDS(DocDataSource):
             label = self._find_with_ns(bib_ref, 'ce:label')
             if label is None:
                 raise ValueError('No ce:label')
+            if not isinstance(label, etree.Element):
+                raise ValueError('More than one label')
             ref_dict['label'] = label.text.strip()
 
             ref = self._find_with_ns(bib_ref, 'sb:reference')
@@ -198,6 +210,8 @@ class ScienceDirectDS(DocDataSource):
                     ref_dict['authors'] = []
                     authors = self._find_with_ns(contrib, 'sb:authors')
                     if authors is not None:
+                        if not isinstance(authors, etree.Element):
+                            raise ValueError('More than one authors')
                         for author in authors.iterfind('sb:author', nsmap):
                             author_dict: Dict[str, str] = {}
                             for child in author:
@@ -235,6 +249,8 @@ class ScienceDirectDS(DocDataSource):
                             date = self._find_with_ns(issue, 'sb:date')
                             if date is None:
                                 raise ValueError('No sb:date')
+                            if not isinstance(date, etree.Element):
+                                raise ValueError('More than one sb:date')
                             ref_dict['date'] = date.text.strip()
                         elif tag.endswith('pages'):
                             pages = host_child
@@ -250,6 +266,8 @@ class ScienceDirectDS(DocDataSource):
                 textref = self._find_with_ns(other_ref, 'ce:textref')
                 if textref is None:
                     raise ValueError('No textref in other-ref')
+                if not isinstance(textref, etree.Element):
+                    raise ValueError('More than one textref')
                 ref_dict['textref'] = textref.text.strip()
 
             refs[ref_dict['id']] = ref_dict
@@ -283,6 +301,8 @@ class ScienceDirectDS(DocDataSource):
 
         if ot is None:
             raise ValueError('Source file has no originalText')
+        if not isinstance(ot, etree.Element):
+            raise ValueError('More than one originalText')
 
         articles: List[etree.Element] = ot.xpath('//*[local-name() = $name]', name='article')
 
@@ -317,20 +337,10 @@ class ScienceDirectDS(DocDataSource):
     def create_doc(self, key: DocKeyType, val: DocValDict) -> NoReturn:
         raise NotSupportedError("ScienceDirectDS is read-only.")
 
-    def read_doc(self, key: DocKeyType = ('@*', '@*'), doc_factory: Optional[DocFactory] = None) -> Union[Dict[DocKeyPair, DocValDict], DocumentSet]:
+    def read_doc(self, key: DocKeyType = DocKeyPair('@*', '@*'), doc_factory: Optional[DocFactory] = None) -> Union[Dict[DocKeyPair, DocValDict], DocumentSet]:
         self._load()
 
-        ds_d_c: List[Tuple] = []
-        if isinstance(key, tuple):
-            ds_d_c.append((key[0], key[1], None))
-
-        if isinstance(key, list):
-            for ds, d in key:
-                ds_d_c.append((ds, d, None))
-
-        if isinstance(key, dict):
-            for (ds, d), c in key.items():
-                ds_d_c.append((ds, d, c))
+        ds_d_c: List[Tuple] = self._format_doc_key(key)
 
         doc_names = set()
         for docset_name, doc_name, _ in ds_d_c:

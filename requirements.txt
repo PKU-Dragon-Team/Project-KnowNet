@@ -1,4 +1,4 @@
-flake8
+-e git+https://gitlab.com/pycqa/flake8#egg=flake8
 lxml
 mypy
 networkx

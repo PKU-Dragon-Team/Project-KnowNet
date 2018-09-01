@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, NamedTuple, Optional, Text, Union, cast, overload
+from typing import Any, Dict, List, NamedTuple, Optional, Text, Tuple, Union
 
 from . import BaseDataSource, ConditionDict
 from ...config import ConfigManager
@@ -38,6 +38,21 @@ class DocDataSource(BaseDataSource):
 
         self._doc_factory: Optional[DocFactory] = None
 
+    @staticmethod
+    def _format_doc_key(key: DocKeyType) -> List[Tuple]:
+        ds_d_c: List[Tuple] = []
+        if isinstance(key, tuple):
+            ds_d_c.append((key[0], key[1], None))
+
+        if isinstance(key, list):
+            for ds, d in key:
+                ds_d_c.append((ds, d, None))
+
+        if isinstance(key, dict):
+            for (ds, d), c in key.items():
+                ds_d_c.append((ds, d, c))
+        return ds_d_c
+
     @abstractmethod
     def create_doc(self, key: DocKeyType, val: DocValDict) -> List[DocKeyPair]:
         pass
@@ -65,14 +80,8 @@ class DocDataSource(BaseDataSource):
     def bind_doc_factory(self, factory: DocFactory) -> None:
         self._doc_factory = factory
 
-    def unbind_doc_factory(self, factory: DocFactory) -> None:
+    def unbind_doc_factory(self) -> None:
         self._doc_factory = None
-
-    def read_docset(self, key: DocKeyType) -> DocumentSet:
-        if self._doc_factory is None:
-            raise AttributeError("No document factory bound, call bind_doc_factory(factory) first.")
-
-        return cast(DocumentSet, self.read_doc(key, self._doc_factory))
 
     @abstractmethod
     def update_doc(self, key: DocKeyType, val: DocValDict) -> List[DocKeyPair]:
