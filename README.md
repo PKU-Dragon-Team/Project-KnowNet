@@ -2,6 +2,8 @@
 
 A project building for knowledge representation in scientific articles
 
+Build status: [![Build Status](https://travis-ci.com/PKU-Dragon-Team/Project-KnowNet.svg?branch=master)](https://travis-ci.com/PKU-Dragon-Team/Project-KnowNet)
+
 ## Current Status
 
 ### data_fetcher
