@@ -36,7 +36,7 @@ class DocDataSource(BaseDataSource):
     def __init__(self, config: ConfigManager, *args, **kwargs) -> None:
         super().__init__(config, *args, **kwargs)
 
-        self._doc_factory: Optional[DocFactory] = None
+        self._factory: Optional[DocFactory] = None
 
     @staticmethod
     def _format_doc_key(key: DocKeyType) -> List[Tuple]:
@@ -57,31 +57,22 @@ class DocDataSource(BaseDataSource):
     def create_doc(self, key: DocKeyType, val: DocValDict) -> List[DocKeyPair]:
         pass
 
-    # Both pylint and flake8 won't recognise @overload for now, so turn-off method redefined checking manually
-    # pylint: disable=function-redefined
-    # flake8: noqa: F811
-
-    # @overload
-    # @abstractmethod
-    # def read_doc(self, key: DocKeyType) -> Dict[DocKeyPair, DocValDict]:
-    #     ...
-
-    # @overload
-    # @abstractmethod
-    # def read_doc(self, key: DocKeyType, doc_factory: DocFactory) -> DocumentSet:
-    #     ...
-
-    # above is completely commented out at last because pylint will misunderstand the signature of the actual method
-
     @abstractmethod
-    def read_doc(self, key: DocKeyType, doc_factory: Optional[DocFactory] = None) -> Union[Dict[DocKeyPair, DocValDict], DocumentSet]:
+    def read_doc(self, key: DocKeyType = DocKeyPair('@*', '@*')) -> Dict[DocKeyPair, DocValDict]:
         pass
 
     def bind_doc_factory(self, factory: DocFactory) -> None:
-        self._doc_factory = factory
+        self._factory = factory
 
     def unbind_doc_factory(self) -> None:
-        self._doc_factory = None
+        self._factory = None
+
+    def read_docset(self, key: DocKeyType = DocKeyPair('@*', '@*'), factory: Optional[DocFactory] = None) -> DocumentSet:
+        if factory is not None:
+            return DocumentSet({d_k: factory.pack(d) for d_k, d in self.read_doc(key).items()})
+        if self._factory is not None:
+            return DocumentSet({d_k: self._factory.pack(d) for d_k, d in self.read_doc(key).items()})
+        raise AttributeError('There is no factory to form document set!')
 
     @abstractmethod
     def update_doc(self, key: DocKeyType, val: DocValDict) -> List[DocKeyPair]:

@@ -1,5 +1,8 @@
 -e git+https://gitlab.com/pycqa/flake8#egg=flake8
+community
+defusedxml
 lxml
+matplotlib
 mypy
 networkx
 pylint
