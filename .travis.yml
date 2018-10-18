@@ -5,3 +5,6 @@ script:
   - flake8 data_platform
   - pylint data_platform
   - mypy data_platform
+  - flake8 data_fetcher
+  - pylint data_fetcher
+  - mypy data_fetcher

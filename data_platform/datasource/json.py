@@ -2,11 +2,10 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Iterable, List, NoReturn, Optional, Set, Text, Union
+from typing import Dict, Iterable, List, NoReturn, Optional, Set, Text
 
 from ..config import ConfigManager
-from ..document import DocumentSet
-from .abc.doc import DocDataSource, DocFactory, DocKeyPair, DocKeyType, DocValDict
+from .abc.doc import DocDataSource, DocKeyPair, DocKeyType, DocValDict
 from .exception import NotSupportedError
 
 
@@ -124,20 +123,13 @@ class JSONDS(DocDataSource):
 
         return result
 
-    def read_doc(self, key: DocKeyType = _wildcard_doc_key, doc_factory: Optional[DocFactory] = None) -> Union[Dict[DocKeyPair, DocValDict], DocumentSet]:
+    def read_doc(self, key: DocKeyType = _wildcard_doc_key) -> Dict[DocKeyPair, DocValDict]:
         target = self._filter(key)
         result: Dict[DocKeyPair, DocValDict] = {}
         for ds, d in target:
             if ds in self._data:
                 if d in self._data[ds]:
                     result[DocKeyPair(ds, d)] = self._data[ds][d]
-
-        if doc_factory is not None:
-            return DocumentSet({kp: doc_factory.pack(d) for kp, d in result.items()})
-
-        if self._doc_factory is not None:
-            return DocumentSet({kp: self._doc_factory.pack(d) for kp, d in result.items()})
-
         return result
 
     def update_doc(self, key: DocKeyType = _default_doc_key, val: Optional[DocValDict] = None) -> List[DocKeyPair]:

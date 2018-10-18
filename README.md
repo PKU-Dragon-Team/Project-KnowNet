@@ -10,6 +10,12 @@ Build status: [![Build Status](https://travis-ci.com/PKU-Dragon-Team/Project-Kno
 
 To be finished.
 
+### network_analysis
+
+**Working** (details to be finished)
+
+TODO: CI compatible
+
 ### data_platform
 
 1. document: **Working**
@@ -19,5 +25,5 @@ To be finished.
     - sqlite (RowDataSource): **Working** (except for _wildcard filtering_)
     - science_direct (DocDataSource): **Working** (except for _wildcard filtering_)
 3. utility: Not yet implemented
-4. config: **Working** (except for _schema checking_)
+4. config: **Working**
 5. log: Not yet implemented

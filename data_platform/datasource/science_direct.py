@@ -4,13 +4,14 @@ import os
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, NoReturn, Optional, Text, Tuple, Union
+from typing import Any, Dict, List, NoReturn, Optional, Text, Tuple
 
+from defusedxml.lxml import parse as etree_parse
 from lxml import etree
 
 from .. import document as _doc
 from ..config import ConfigManager
-from ..document import Document, DocumentSet, Element
+from ..document import Document, Element
 from .abc.doc import DocDataSource, DocFactory, DocKeyPair, DocKeyType, DocValDict
 from .exception import NotSupportedError
 
@@ -58,7 +59,7 @@ class ScienceDirectDS(DocDataSource):
 
         self._path = path
         self._mtime = 0.0
-        self._doc_factory: Optional[DocFactory] = None
+        self._factory: Optional[DocFactory] = ScienceDirectFactory()
         self._data: Dict[Text, Dict] = {}
 
         self._load()
@@ -74,8 +75,36 @@ class ScienceDirectDS(DocDataSource):
         return []
 
     @staticmethod
-    def _find_with_ns(node: etree.Element, query: Text) -> Union[None, etree.Element, Iterable[etree.Element]]:
-        return node.find(query, node.nsmap)
+    def _find_with_ns(node: etree.ElementBase, query: Text) -> List[etree.ElementBase]:
+        result = node.find(query, node.nsmap)
+        if result is None:
+            return []
+        if isinstance(result, etree.ElementBase):
+            return [result]
+        return list(result)
+
+    @classmethod
+    def _find_one_with_ns(cls, node: etree.ElementBase, query: Text) -> etree.ElementBase:
+        result = cls._find_with_ns(node, query)
+        if not result:
+            raise ValueError(f'There is no {query}.')
+        return result[0]
+
+    @staticmethod
+    def _xpath(node: etree.ElementBase, query: Text, *args, **kwargs) -> List[etree.ElementBase]:
+        result = node.xpath(query, *args, **kwargs)
+        if result is None:
+            return []
+        if isinstance(result, etree.ElementBase):
+            return [result]
+        return result
+
+    @staticmethod
+    def _xpath_one(node: etree.ElementBase, query: Text, *args, **kwargs) -> etree.ElementBase:
+        result = node.xpath(query, *args, **kwargs)
+        if not result:
+            raise ValueError(f'Query {query} has no result.')
+        return result[0]
 
     def _load(self) -> None:
         mtime = os.path.getmtime(self._path)
@@ -97,17 +126,9 @@ class ScienceDirectDS(DocDataSource):
             return tag[end + 1:]
         return tag
 
-    def _parse_body(self, body: etree.Element) -> Tuple[List[_doc.Section], Dict[Text, List[Element]]]:
-
+    def _parse_body(self, body: etree.ElementBase) -> Tuple[List[_doc.Section], Dict[Text, List[Element]]]:
         bibid2para: Dict[Text, List[Element]] = defaultdict(list)
-
-        sections = self._find_with_ns(body, 'ce:sections')
-        if sections is None:
-            raise ValueError('There is no sections in file')
-
-        if not isinstance(sections, etree.Element):
-            raise ValueError('There are more than one sections')
-
+        sections = self._find_one_with_ns(body, 'ce:sections')
         nsmap = sections.nsmap
         sec_list: List[_doc.Section] = []
         for sec in sections.iterfind('ce:section', nsmap):
@@ -158,116 +179,80 @@ class ScienceDirectDS(DocDataSource):
             sec_list.append(sec_elem)
         return sec_list, bibid2para
 
-    def _parse_tail(self, tail: etree.Element) -> _doc.MetaData:
-        bib = self._find_with_ns(tail, 'ce:bibliography')
-
-        if bib is None:
-            raise ValueError('Source file has no bibliography')
-
-        if not isinstance(bib, etree.Element):
-            raise ValueError('More than one bibliography')
-
+    def _parse_tail(self, tail: etree.ElementBase) -> _doc.MetaData:
+        bib = self._find_one_with_ns(tail, 'ce:bibliography')
         attr = {**bib.attrib}
 
         # section-title
-        title = self._find_with_ns(bib, 'ce:section-title')
-        if title is None:
-            raise ValueError('No section-title')
-
-        if not isinstance(title, etree.Element):
-            raise ValueError('More than one title')
-
+        title = self._find_one_with_ns(bib, 'ce:section-title')
         title_attr = {**title.attrib}
         title_attr['text'] = title.text.rstrip()
-
         attr['section-title'] = title_attr
 
         # bib-sec
-        bib_sec = self._find_with_ns(bib, 'ce:bibliography-sec')
-        if bib_sec is None:
-            raise ValueError('No bibliography-sec')
-        if not isinstance(bib_sec, etree.Element):
-            raise ValueError('More than one bibliography-sec')
+        bib_sec = self._find_one_with_ns(bib, 'ce:bibliography-sec')
         bibsec_attr = {**bib_sec.attrib}
-
         nsmap = bib_sec.nsmap
         refs: Dict[str, Dict] = {}
         for bib_ref in bib_sec.iterfind('ce:bib-reference', nsmap):
             ref_dict = {**bib_ref.attrib}
-
-            label = self._find_with_ns(bib_ref, 'ce:label')
-            if label is None:
-                raise ValueError('No ce:label')
-            if not isinstance(label, etree.Element):
-                raise ValueError('More than one label')
+            label = self._find_one_with_ns(bib_ref, 'ce:label')
             ref_dict['label'] = label.text.strip()
+            refs_ = self._find_with_ns(bib_ref, 'sb:reference')
 
-            ref = self._find_with_ns(bib_ref, 'sb:reference')
-            if ref is not None:
-                contrib = self._find_with_ns(ref, 'sb:contribution')  # author and title
-
-                if contrib is not None:
+            if refs_:
+                # author and title
+                contribs = self._find_with_ns(refs_[0], 'sb:contribution')
+                if contribs:
+                    contrib = contribs[0]
                     ref_dict['authors'] = []
                     authors = self._find_with_ns(contrib, 'sb:authors')
-                    if authors is not None:
-                        if not isinstance(authors, etree.Element):
-                            raise ValueError('More than one authors')
-                        for author in authors.iterfind('sb:author', nsmap):
+                    if authors:
+                        for author in authors[0].iterfind('sb:author', nsmap):
                             author_dict: Dict[str, str] = {}
                             for child in author:
                                 author_dict[self._tag_without_ns(child.tag)] = child.text.strip()
                             ref_dict['authors'].append(author_dict)
 
-                    ref_title = self._find_with_ns(contrib, 'sb:title')
-                    if ref_title is not None:
+                    ref_titles = self._find_with_ns(contrib, 'sb:title')
+                    if ref_titles:
                         title_dict: Dict[str, str] = {}
-                        for child in ref_title:
+                        for child in ref_titles[0]:
                             title_dict[self._tag_without_ns(child.tag)] = child.text.strip()
                         ref_dict['title'] = title_dict
 
-                host = self._find_with_ns(ref, 'sb:host')  # series and pages
-                if host is not None:
-                    for host_child in host:
-                        tag = self._tag_without_ns(host_child.tag)
-                        if tag.endswith('issue'):
-                            issue = host_child
+                    # series and pages
+                host = self._find_one_with_ns(refs_[0], 'sb:host')
+                for host_child in host:
+                    tag = self._tag_without_ns(host_child.tag)
+                    if tag.endswith('issue'):
+                        issue = host_child
 
-                            series = self._find_with_ns(issue, 'sb:series')
-                            if not isinstance(series, Iterable):
-                                raise ValueError('sb:series error.')
+                        series = self._find_with_ns(issue, 'sb:series')
+                        for series_child in series:
+                            raw_tag = self._tag_without_ns(series_child.tag)
+                            if raw_tag.endswith('title'):
+                                issue_title_dict: Dict[str, str] = {}
+                                for child in series_child:
+                                    issue_title_dict[self._tag_without_ns(child.tag)] = child.text.strip()
+                                ref_dict['host_title'] = issue_title_dict
+                            else:
+                                ref_dict[self._tag_without_ns(series_child.tag)] = series_child.text.strip()
 
-                            for series_child in series:
-                                raw_tag = self._tag_without_ns(series_child.tag)
-                                if raw_tag.endswith('title'):
-                                    issue_title_dict: Dict[str, str] = {}
-                                    for child in series_child:
-                                        issue_title_dict[self._tag_without_ns(child.tag)] = child.text.strip()
-                                    ref_dict['host_title'] = issue_title_dict
-                                else:
-                                    ref_dict[self._tag_without_ns(series_child.tag)] = series_child.text.strip()
-
-                            date = self._find_with_ns(issue, 'sb:date')
-                            if date is None:
-                                raise ValueError('No sb:date')
-                            if not isinstance(date, etree.Element):
-                                raise ValueError('More than one sb:date')
-                            ref_dict['date'] = date.text.strip()
-                        elif tag.endswith('pages'):
-                            pages = host_child
-                            pages_dict: Dict[Text, Text] = {}
-                            for page_child in pages:
-                                pages_dict[self._tag_without_ns(page_child.tag)] = page_child.text.strip()
-                            ref_dict['pages'] = pages_dict
-                        else:
-                            ref_dict[self._tag_without_ns(host_child.tag)] = host_child.text.strip()
+                        date = self._find_one_with_ns(issue, 'sb:date')
+                        ref_dict['date'] = date.text.strip()
+                    elif tag.endswith('pages'):
+                        pages = host_child
+                        pages_dict: Dict[Text, Text] = {}
+                        for page_child in pages:
+                            pages_dict[self._tag_without_ns(page_child.tag)] = page_child.text.strip()
+                        ref_dict['pages'] = pages_dict
+                    else:
+                        ref_dict[self._tag_without_ns(host_child.tag)] = host_child.text.strip()
 
             other_ref = self._find_with_ns(bib_ref, 'ce:other-ref')
-            if other_ref is not None:
-                textref = self._find_with_ns(other_ref, 'ce:textref')
-                if textref is None:
-                    raise ValueError('No textref in other-ref')
-                if not isinstance(textref, etree.Element):
-                    raise ValueError('More than one textref')
+            if other_ref:
+                textref = self._find_one_with_ns(other_ref[0], 'ce:textref')
                 ref_dict['textref'] = textref.text.strip()
 
             refs[ref_dict['id']] = ref_dict
@@ -278,17 +263,13 @@ class ScienceDirectDS(DocDataSource):
         return _doc.MetaData(attr)
 
     def _parse_one(self, xmlfile: Path) -> Document:
-        tree = etree.parse(str(xmlfile))
+        tree = etree_parse(str(xmlfile))
         root = tree.getroot()
 
         doc_meta = {}
 
         # coredata
-        coredata = self._find_with_ns(root, 'coredata')
-
-        if coredata is None:
-            raise ValueError('Source file has no coredata')
-
+        coredata = self._find_one_with_ns(root, 'coredata')
         coredata_attr = {}
         for child in coredata:
             text = child.text
@@ -297,38 +278,26 @@ class ScienceDirectDS(DocDataSource):
         doc_meta['coredata'] = coremeta
 
         # originalText
-        ot = self._find_with_ns(root, 'originalText')
-
-        if ot is None:
-            raise ValueError('Source file has no originalText')
-        if not isinstance(ot, etree.Element):
-            raise ValueError('More than one originalText')
-
-        articles: List[etree.Element] = ot.xpath('//*[local-name() = $name]', name='article')
-
+        ot = self._find_one_with_ns(root, 'originalText')
+        articles = self._xpath(ot, '//*[local-name() = $name]', name='article')
         if not articles:
-            raise ValueError('Source file has no article')
-
+            raise ValueError('There is no article.')
         article = articles[0]
 
         # body
-        body = self._find_with_ns(article, 'body')
-
-        if body is None:
-            raise ValueError('Source file has no body')
-
-        sec_list, bib2para = self._parse_body(body)
+        body = self._find_one_with_ns(article, 'body')
+        sec_list, bib2elem = self._parse_body(body)
         doc_root = _doc.Root(sec_list)
 
+        # root created, id setted
+        bib2para = {}
+        for bibid, elems in bib2elem.items():  # type: Text, List[Element]
+            bib2para[bibid] = [elem.id_ for elem in elems]
         bibid2para = _doc.MetaData(bib2para)
         doc_meta['bib2para'] = bibid2para
 
         # tail
-        tail = self._find_with_ns(article, 'tail')
-
-        if tail is None:
-            raise ValueError('Source file has no tail')
-
+        tail = self._find_one_with_ns(article, 'tail')
         references = self._parse_tail(tail)
         doc_meta['references'] = references
 
@@ -337,7 +306,7 @@ class ScienceDirectDS(DocDataSource):
     def create_doc(self, key: DocKeyType, val: DocValDict) -> NoReturn:
         raise NotSupportedError("ScienceDirectDS is read-only.")
 
-    def read_doc(self, key: DocKeyType = DocKeyPair('@*', '@*'), doc_factory: Optional[DocFactory] = None) -> Union[Dict[DocKeyPair, DocValDict], DocumentSet]:
+    def read_doc(self, key: DocKeyType = DocKeyPair('@*', '@*')) -> Dict[DocKeyPair, DocValDict]:
         self._load()
 
         ds_d_c: List[Tuple] = self._format_doc_key(key)
@@ -355,10 +324,6 @@ class ScienceDirectDS(DocDataSource):
                 doc_names.add(doc_name)
 
         result = {DocKeyPair('_default', doc_name): self._data[doc_name] for doc_name in doc_names}
-
-        if doc_factory is not None:
-            return DocumentSet({doc_key: doc_factory.pack(doc_dict) for doc_key, doc_dict in result.items()})
-
         return result
 
     def update_doc(self, key: DocKeyType, val: DocValDict) -> NoReturn:
