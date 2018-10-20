@@ -1,12 +1,20 @@
 language: python
-python:
-  - "3.6"
-  - "3.7"
+matrix:
+  include:
+    - python: 3.6
+      env: TESTFOLDER=data_platform
+    - python: 3.6
+      env: TESTFOLDER=data_fetcher
+    - python: 3.7
+      env: TESTFOLDER=data_platform
+      dist: xenial
+      sudo: true
+    - python: 3.7
+      env: TESTFOLDER=data_fetcher
+      dist: xenial
+      sudo: true
 install:
   - pip install -r requirements.txt
-env:
-  - TESTFOLDER=data_platform
-  - TESTFOLDER=data_fetcher
 script:
   - flake8 $TESTFOLDER
   - pylint $TESTFOLDER
