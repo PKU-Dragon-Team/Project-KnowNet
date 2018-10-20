@@ -1,10 +1,13 @@
 language: python
 python:
   - "3.6"
+  - "3.7"
+install:
+  - pip install -r requirements.txt
+env:
+  - TESTFOLDER=data_platform
+  - TESTFOLDER=data_fetcher
 script:
-  - flake8 data_platform
-  - pylint data_platform
-  - mypy data_platform
-  - flake8 data_fetcher
-  - pylint data_fetcher
-  - mypy data_fetcher
+  - flake8 $TESTFOLDER
+  - pylint $TESTFOLDER
+  - mypy $TESTFOLDER
