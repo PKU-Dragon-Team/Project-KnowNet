@@ -1,9 +1,14 @@
--e git+https://gitlab.com/pycqa/flake8#egg=flake8
+git+https://gitlab.com/pycqa/flake8
 community
 defusedxml
+gensim
 lxml
 matplotlib
 mypy
+nltk
+rake-nltk
+numpy
 networkx
 pylint
+textblob
 yapf
