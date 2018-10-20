@@ -10,11 +10,17 @@ Build status: [![Build Status](https://travis-ci.com/PKU-Dragon-Team/Project-Kno
 
 To be finished.
 
+### network_construction
+
+**Working** (details to be finished)
+
+***TODO***: CI compatible
+
 ### network_analysis
 
 **Working** (details to be finished)
 
-TODO: CI compatible
+***TODO***: CI compatible
 
 ### data_platform
 
