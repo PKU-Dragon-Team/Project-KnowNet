@@ -15,7 +15,10 @@ matrix:
       sudo: true
 install:
   - pip install -r requirements.txt
+  - pip install -e data_platform/
+  - pip install -e data_fetcher/
 script:
   - flake8 $TESTFOLDER
   - pylint $TESTFOLDER
   - mypy $TESTFOLDER
+  - python test/$TESTFOLDER/runtest.py
