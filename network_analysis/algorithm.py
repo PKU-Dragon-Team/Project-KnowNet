@@ -227,7 +227,7 @@ def analysis_top_keyword_by_time(data, field="keyword", centrality_type='degree'
             continue
         net_dict[time] = N  # 缓存网络数据，以备用
         top_kw[time] = dict()  # 年度重要关键词词典，键为关键词，值为中心性大小
-        for item in N.find_nodes_by_centrality(type=centrality_type, n=n):
+        for item in N.find_nodes_by_centrality(c_type=centrality_type, n=n):
             top_kw[time][item[0]] = item[1]
             top_kw_set.add(item[0])
     if start_time < 2000:
@@ -242,7 +242,7 @@ def analysis_top_keyword_by_time(data, field="keyword", centrality_type='degree'
         for time in times:
             if kw not in top_kw[time].keys():
                 try:
-                    top_kw[time][kw] = net_dict[time].node_centrality(type=centrality_type, node=kw)  # 在缓存网络中查中心度
+                    top_kw[time][kw] = net_dict[time].node_centrality(c_type=centrality_type, node=kw)  # 在缓存网络中查中心度
                 except:
                     top_kw[time][kw] = 0.0
             kw_value.append(top_kw[time][kw])
