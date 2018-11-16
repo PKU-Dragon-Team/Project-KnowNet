@@ -41,11 +41,20 @@ def search_author(source,document):
                 doc = docset[('_default', str(i))]
                 coredata = doc.metadatas['coredata']
                 coredata_dict = coredata.meta_dict
-                creator = coredata_dict['creator']
+                if('creator' in coredata_dict.keys()):
+                    creator = coredata_dict['creator']
+                else:
+                    creator = 'none'
                 author_struct = {}
                 author_struct['doc_id'] = i
-                author_struct['doc_doi'] = coredata_dict['doi']
-                author_struct['title'] = coredata_dict['title']
+                if ('doi' in coredata_dict.keys()):
+                    author_struct['doc_doi'] = coredata_dict['doi']
+                else:
+                    author_struct['doc_doi'] = 'none'
+                if ('title' in coredata_dict.keys()):
+                    author_struct['title'] = coredata_dict['title']
+                else:
+                    author_struct['title'] = 'none'
                 author_struct['author_number'] = 1
                 author_struct['author_list'] = [creator]
                 author_struct_array.append(author_struct)
@@ -76,8 +85,14 @@ def search_citation(source,document):
                 ref_dict = ref.meta_dict
                 citation_struct = {}
                 citation_struct['doc_id'] = i
-                citation_struct['doc_doi'] = coredata_dict['doi']
-                citation_struct['title'] = coredata_dict['title']
+                if ('doi' in coredata_dict.keys()):
+                    citation_struct['doc_doi'] = coredata_dict['doi']
+                else:
+                    citation_struct['doc_doi'] = 'none'
+                if ('title' in coredata_dict.keys()):
+                    citation_struct['title'] = coredata_dict['title']
+                else:
+                    citation_struct['title'] = 'none'
                 citation_struct['bib_number'] = len(ref_dict['bibbliography-section']['references'])
                 citation_struct['bib_detail'] = ref_dict['bibbliography-section']['references']
                 citation_struct_array.append(citation_struct)
@@ -106,8 +121,14 @@ def search_text(source,document):
                 coredata_dict = coredata.meta_dict
                 text_struct = {}
                 text_struct['doc_id'] = i
-                text_struct['doc_doi'] = coredata_dict['doi']
-                text_struct['title'] = coredata_dict['title']
+                if ('doi' in coredata_dict.keys()):
+                    text_struct['doc_doi'] = coredata_dict['doi']
+                else:
+                    text_struct['doc_doi'] = 'none'
+                if ('title' in coredata_dict.keys()):
+                    text_struct['title'] = coredata_dict['title']
+                else:
+                    text_struct['title'] = 'none'
                 text_struct['text'] = doc.get_text()
                 text_struct_array.append(text_struct)
     return text_struct_array
@@ -138,8 +159,14 @@ def search_all(source,document):
                 ref_dict = ref.meta_dict
                 all_struct = {}
                 all_struct['doc_id'] = i
-                all_struct['doc_doi'] = coredata_dict['doi']
-                all_struct['title'] = coredata_dict['title']
+                if ('doi' in coredata_dict.keys()):
+                    all_struct['doc_doi'] = coredata_dict['doi']
+                else:
+                    all_struct['doc_doi'] = 'none'
+                if ('title' in coredata_dict.keys()):
+                    all_struct['title'] = coredata_dict['title']
+                else:
+                    all_struct['title'] = 'none'
                 all_struct['author_number'] = 1
                 all_struct['author_list'] = [creator]
                 all_struct['bib_number'] = len(ref_dict['bibbliography-section']['references'])
