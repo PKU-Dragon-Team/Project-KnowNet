@@ -14,7 +14,7 @@ from gensim.models import word2vec
 ssl._create_default_https_context = ssl._create_unverified_context
 # nltk.download()
 import collections
-
+from nltk.corpus import wordnet as wn
 # this class is used for chunk.
 class UnigramChunker(nltk.ChunkParserI):
     """
@@ -212,6 +212,29 @@ def word2vec_result(word):
     #print(new_model[word])
     return new_model[word]
 
+
+#返回一个词语所在的词语集合，一个词语会在多个词语集合中
+def wordnet_synsets(word):
+    if(wn.synsets(word)):
+        return wn.synsets(word)
+    else:
+        return 1
+
+
+#输入一个同义词集，返回词集中的所有词条
+def wordnet_lemma_names(wordset):
+    return wn.synset(wordset).lemma_names
+
+
+def wordnet_similarity(word1,word2):
+    if(wordnet_synsets(word1)!= 1 and wordnet_synsets(word2)!= 1):
+        word1_synsets = wordnet_synsets(word1)
+        word2_synsets = wordnet_synsets(word2)
+        word1_synset = word1_synsets[0]
+        word2_synset = word2_synsets[0]
+        return word1_synset.path_similarity(word2_synset)
+    else:
+        return 0
 #if __name__ == '__main__':
     #print(para2senc2words('I am very excited about the next generation of Apple products. But I am csk! So I am not afraid of you. I am very excited about the next generation of Apple products. But I am csk! So I am not afraid of you.'))
     #word2vec_initialize("I am very excited about the next generation of Apple products. But I am csk! So I am not afraid of you.")
@@ -221,3 +244,4 @@ def word2vec_result(word):
     #extract_word_freq("Hello world, I am csk")
     #model = word2vec.Word2Vec.load("knowledgeB.model")
     #print(model.similarity("I","Apple"))
+
