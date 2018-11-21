@@ -78,8 +78,11 @@ def node_extraction_paper(source, document, database):
                 node_key = "paper_" + docdoi
                 node_struct = {}
                 node_struct['doc_doi'] = docdoi
-                if('maintitle' in value['title'].keys()):
-                    node_struct['title'] = value['title']['maintitle']
+                if 'title' in value.keys():
+                    if('maintitle' in value['title'].keys()):
+                        node_struct['title'] = value['title']['maintitle']
+                    else:
+                        node_struct['title'] = "null"
                 else:
                     node_struct['title'] = "null"
                 node_struct['author_number'] = len(value['authors'])
