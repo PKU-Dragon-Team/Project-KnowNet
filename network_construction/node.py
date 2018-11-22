@@ -20,7 +20,8 @@ config = ConfigManager({
 })
 
 
-
+#the output format is a dictionary; its key is node_key and the properties are id name email;
+#if there is nop author-name, the key is author_null
 def node_extraction_author(source,document,database):
     authors = s.search_author(source, document)
     citations = s.search_citation(source, document)
@@ -46,7 +47,7 @@ def node_extraction_author(source,document,database):
                             if ('surname' in each.keys()):
                                 author_name = each['surname']
                             else:
-                                author_name = ""
+                                author_name = "null"
                     node_key = "author_"+ author_name
                     node_struct = {}
                     node_struct['id'] = "null"
@@ -56,6 +57,8 @@ def node_extraction_author(source,document,database):
     return 0
 
 
+#if we can not get a property; the default value is "null"
+#for all the citation papers, if there is no bib_number property, the default number is -1
 def node_extraction_paper(source, document, database):
     all = s.search_all(source,document)
     citations = s.search_citation(source, document)
@@ -75,14 +78,20 @@ def node_extraction_paper(source, document, database):
                 node_key = "paper_" + docdoi
                 node_struct = {}
                 node_struct['doc_doi'] = docdoi
-                if('maintitle' in value['title'].keys()):
-                    node_struct['title'] = value['title']['maintitle']
+                if 'title' in value.keys():
+                    if('maintitle' in value['title'].keys()):
+                        node_struct['title'] = value['title']['maintitle']
+                    else:
+                        node_struct['title'] = "null"
+                else:
+                    node_struct['title'] = "null"
                 node_struct['author_number'] = len(value['authors'])
-                node_struct['bib_number'] = 0
+                node_struct['bib_number'] = -1
                 db.insert_paper(node_key, node_struct, database)
     return 0
 
 
+# the "node" argument's value can be "noun"/"adj"/"verb"/"noun_phrase"/"keyword"/"ner"
 def node_extraction_text(source, document, node, database):
     text = s.search_text(source, document)
     if node == "noun":
@@ -94,16 +103,51 @@ def node_extraction_text(source, document, node, database):
                 node_struct = {}
                 node_struct['word'] = w
                 db.insert_word(node_key, node_struct, database)
-    else:
-        if node == "adj":
-            for a in text:
-                all_text = a['text']
-                words = algorithm.extract_adj(all_text)
-                for w in words:
-                    node_key = "word_" + w
-                    node_struct = {}
-                    node_struct['word'] = w
-                    db.insert_word(node_key, node_struct, database)
+    if node == "adj":
+        for a in text:
+            all_text = a['text']
+            words = algorithm.extract_adj(all_text)
+            for w in words:
+                node_key = "word_" + w
+                node_struct = {}
+                node_struct['word'] = w
+                db.insert_word(node_key, node_struct, database)
+    if node == "keyword":
+        for a in text:
+            all_text = a['text']
+            words = algorithm.extract_keyword(all_text)
+            for w in words:
+                node_key = "word_" + w
+                node_struct = {}
+                node_struct['word'] = w
+                db.insert_word(node_key, node_struct, database)
+    if node == "noun_phrase":
+        for a in text:
+            all_text = a['text']
+            words = algorithm.extract_noun_phrase(all_text)
+            for w in words:
+                node_key = "word_" + w
+                node_struct = {}
+                node_struct['word'] = w
+                db.insert_word(node_key, node_struct, database)
+    if node == "ner":
+        for a in text:
+            all_text = a['text']
+            words = algorithm.extract_ner(all_text)
+            for w in words:
+                node_key = "word_" + w
+                node_struct = {}
+                node_struct['word'] = w
+                db.insert_word(node_key, node_struct, database)
+    if node == "verb":
+        for a in text:
+            all_text = a['text']
+            words = algorithm.extract_verb(all_text)
+            for w in words:
+                node_key = "word_" + w
+                node_struct = {}
+                node_struct['word'] = w
+                db.insert_word(node_key, node_struct, database)
     return 0
 
 #if __name__ == '__main__':

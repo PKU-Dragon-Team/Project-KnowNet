@@ -3,6 +3,8 @@ import re
 import ssl
 import nltk
 from nltk.tokenize import WordPunctTokenizer
+import nltk.stem
+from nltk import SnowballStemmer
 from nltk.corpus import brown
 from nltk.corpus import conll2000
 from rake_nltk import Rake
@@ -89,12 +91,15 @@ print(unigram_chunker.evaluate(test_sents))
 
 def extract_keyword(text):
     r = Rake()
-    keyword = r.extract_keywords_from_text(text)
-    return keyword
+    r.extract_keywords_from_text(text)
+    result = list(r.get_word_degrees().keys())
+    return result
+
 
 def extract_word(text):
     words = nltk.word_tokenize(text)
     return words
+
 
 def extract_noun(text):
     words = nltk.word_tokenize(text)
@@ -169,7 +174,9 @@ def para2senc2words(text):
     return result
 
 
-def extract_relation(text):
+'''
+#this is the original relation extraction method
+def extract_relation_noun_co(text):
     sentences = splitSentence(text)
     relation = []
     for sentence in sentences:
@@ -186,6 +193,167 @@ def extract_relation(text):
             for i in range(0,len(temp)-1):
                 for j in range(i+1, len(temp)):
                     relation.append((temp[i], temp[j], "co"))
+    return relation
+'''
+
+
+def extract_relation_noun_co(text):
+    sentences = splitSentence(text)
+    relation = []
+    for sentence in sentences:
+        words = extract_noun(sentence)
+        temp = []
+        for word in words:
+            if word not in temp:
+                temp.append(word)
+        if len(temp) >= 2:
+            for i in range(0,len(temp)-1):
+                for j in range(i+1, len(temp)):
+                    relation.append((temp[i], temp[j], "co"))
+    return relation
+
+
+def extract_relation_noun_phrase_co(text):
+    sentences = splitSentence(text)
+    relation = []
+    for sentence in sentences:
+        words = extract_noun_phrase(sentence)
+        temp = []
+        for word in words:
+            if word not in temp:
+                temp.append(word)
+        if len(temp) >= 2:
+            for i in range(0,len(temp)-1):
+                for j in range(i+1, len(temp)):
+                    relation.append((temp[i], temp[j], "co"))
+    return relation
+
+
+def extract_relation_keyword_co(text):
+    sentences = splitSentence(text)
+    relation = []
+    for sentence in sentences:
+        words = extract_keyword(sentence)
+        temp = []
+        for word in words:
+            if word not in temp:
+                temp.append(word)
+        if len(temp) >= 2:
+            for i in range(0, len(temp) - 1):
+                for j in range(i + 1, len(temp)):
+                    relation.append((temp[i], temp[j], "co"))
+    return relation
+
+
+def extract_relation_adj_co(text):
+    sentences = splitSentence(text)
+    relation = []
+    for sentence in sentences:
+        words = extract_adj(sentence)
+        temp = []
+        for word in words:
+            if word not in temp:
+                temp.append(word)
+        if len(temp) >= 2:
+            for i in range(0,len(temp)-1):
+                for j in range(i+1, len(temp)):
+                    relation.append((temp[i], temp[j], "co"))
+    return relation
+
+
+def extract_relation_verb_co(text):
+    sentences = splitSentence(text)
+    relation = []
+    for sentence in sentences:
+        words = extract_verb(sentence)
+        temp = []
+        for word in words:
+            if word not in temp:
+                temp.append(word)
+        if len(temp) >= 2:
+            for i in range(0,len(temp)-1):
+                for j in range(i+1, len(temp)):
+                    relation.append((temp[i], temp[j], "co"))
+    return relation
+
+
+def extract_relation_ner_co(text):
+    sentences = splitSentence(text)
+    relation = []
+    for sentence in sentences:
+        words = extract_ner(sentence)
+        temp = []
+        for word in words:
+            if word not in temp:
+                temp.append(word)
+        if len(temp) >= 2:
+            for i in range(0,len(temp)-1):
+                for j in range(i+1, len(temp)):
+                    relation.append((temp[i], temp[j], "co"))
+    return relation
+
+
+def extract_relation_noun_wordnet(text):
+    words = extract_noun(text)
+    temp = []
+    relation = []
+    for word in words:
+        if word not in temp:
+            temp.append(word)
+    if len(temp) >= 2:
+        for i in range(0,len(temp)-1):
+            for j in range(i+1, len(temp)):
+                if wordnet_similarity(temp[i],temp[j]):
+                    similarity = wordnet_similarity(temp[i],temp[j])
+                    relation.append((temp[i], temp[j], "wordnet", similarity))
+    return relation
+
+
+def extract_relation_adj_wordnet(text):
+    words = extract_adj(text)
+    temp = []
+    relation = []
+    for word in words:
+        if word not in temp:
+            temp.append(word)
+    if len(temp) >= 2:
+        for i in range(0,len(temp)-1):
+            for j in range(i+1, len(temp)):
+                if wordnet_similarity(temp[i],temp[j]):
+                    similarity = wordnet_similarity(temp[i],temp[j])
+                    relation.append((temp[i], temp[j], "wordnet", similarity))
+    return relation
+
+
+def extract_relation_verb_wordnet(text):
+    words = extract_verb(text)
+    temp = []
+    relation = []
+    for word in words:
+        if word not in temp:
+            temp.append(word)
+    if len(temp) >= 2:
+        for i in range(0,len(temp)-1):
+            for j in range(i+1, len(temp)):
+                if wordnet_similarity(temp[i],temp[j]):
+                    similarity = wordnet_similarity(temp[i],temp[j])
+                    relation.append((temp[i], temp[j], "wordnet", similarity))
+    return relation
+
+
+def extract_relation_keyword_wordnet(text):
+    words = extract_keyword(text)
+    temp = []
+    relation = []
+    for word in words:
+        if word not in temp:
+            temp.append(word)
+    if len(temp) >= 2:
+        for i in range(0,len(temp)-1):
+            for j in range(i+1, len(temp)):
+                if wordnet_similarity(temp[i],temp[j]):
+                    similarity = wordnet_similarity(temp[i],temp[j])
+                    relation.append((temp[i], temp[j], "wordnet", similarity))
     return relation
 
 
@@ -213,6 +381,21 @@ def word2vec_result(word):
     return new_model[word]
 
 
+#词干提取 fishing-fish shops-shop
+def word_stem(word):
+    s = nltk.stem.SnowballStemmer('english')
+    if(s.stem(word)):
+        return s.stem(word)
+    else:
+        return word
+
+
+#词形还原 octopi-octopus
+def word_lemmatized(word):
+    w = Word(word)
+    return w.lemmatize()
+
+
 #返回一个词语所在的词语集合，一个词语会在多个词语集合中
 def wordnet_synsets(word):
     if(wn.synsets(word)):
@@ -227,9 +410,11 @@ def wordnet_lemma_names(wordset):
 
 
 def wordnet_similarity(word1,word2):
-    if(wordnet_synsets(word1)!= 1 and wordnet_synsets(word2)!= 1):
-        word1_synsets = wordnet_synsets(word1)
-        word2_synsets = wordnet_synsets(word2)
+    worda = word_stem(word1)
+    wordb = word_stem(word2)
+    if(wordnet_synsets(worda)!= 1 and wordnet_synsets(wordb)!= 1):
+        word1_synsets = wordnet_synsets(worda)
+        word2_synsets = wordnet_synsets(wordb)
         word1_synset = word1_synsets[0]
         word2_synset = word2_synsets[0]
         return word1_synset.path_similarity(word2_synset)
@@ -244,4 +429,6 @@ def wordnet_similarity(word1,word2):
     #extract_word_freq("Hello world, I am csk")
     #model = word2vec.Word2Vec.load("knowledgeB.model")
     #print(model.similarity("I","Apple"))
+    #print(word_stem('shops'))
+    #print(word_stem('chicken'))
 
