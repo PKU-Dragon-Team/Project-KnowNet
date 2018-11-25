@@ -1,10 +1,5 @@
 # encoding:utf-8
-import re
-import data_platform.datasource as ds
 from data_platform.config import ConfigManager
-from data_platform.datasource.science_direct import ScienceDirectDS, ScienceDirectFactory
-import re
-import textblob
 import source as s
 import database as db
 import algorithm
@@ -20,21 +15,21 @@ config = ConfigManager({
 })
 
 
-#the output format is a dictionary; its key is node_key and the properties are id name email;
-#if there is nop author-name, the key is author_null
-def node_extraction_author(source,document,database):
+# the output format is a dictionary; its key is node_key and the properties are id name email;
+# if there is nop author-name, the key is author_null
+def node_extraction_author(source, document, database):
     authors = s.search_author(source, document)
     citations = s.search_citation(source, document)
     for a in authors:
         author_name = a['author_list'][0]
-        node_key = "author_"+ author_name
+        node_key = "author_" + author_name
         node_struct = {}
         node_struct['id'] = "null"
         node_struct['name'] = author_name
         node_struct['email'] = "null"
         db.insert_author(node_key, node_struct, database)
     for c in citations:
-        for key,value in c['bib_detail'].items():
+        for key, value in c['bib_detail'].items():
             if('authors' in value.keys()):
                 author_names = value['authors']
                 for each in author_names:
@@ -48,7 +43,7 @@ def node_extraction_author(source,document,database):
                                 author_name = each['surname']
                             else:
                                 author_name = "null"
-                    node_key = "author_"+ author_name
+                    node_key = "author_" + author_name
                     node_struct = {}
                     node_struct['id'] = "null"
                     node_struct['name'] = author_name
@@ -57,10 +52,10 @@ def node_extraction_author(source,document,database):
     return 0
 
 
-#if we can not get a property; the default value is "null"
-#for all the citation papers, if there is no bib_number property, the default number is -1
+# if we can not get a property; the default value is "null"
+# for all the citation papers, if there is no bib_number property, the default number is -1
 def node_extraction_paper(source, document, database):
-    all = s.search_all(source,document)
+    all = s.search_all(source, document)
     citations = s.search_citation(source, document)
     for a in all:
         doc_doi = a['doc_doi']
@@ -69,10 +64,10 @@ def node_extraction_paper(source, document, database):
         node_struct['doc_doi'] = doc_doi
         node_struct['title'] = a['title']
         node_struct['author_number'] = a['author_number']
-        node_struct['bib_number'] =  a['bib_number']
+        node_struct['bib_number'] = a['bib_number']
         db.insert_paper(node_key, node_struct, database)
     for c in citations:
-        for key,value in c['bib_detail'].items():
+        for key, value in c['bib_detail'].items():
             if('doi' in value.keys()):
                 docdoi = value['doi']
                 node_key = "paper_" + docdoi
@@ -150,6 +145,6 @@ def node_extraction_text(source, document, node, database):
                 db.insert_word(node_key, node_struct, database)
     return 0
 
-#if __name__ == '__main__':
-    #node_extraction_author("ScienceDirectDataSource","1-50","knowledge")
-#此模块经过验证可用，一些常见的异常已经被处理
+# if __name__ == '__main__':
+# node_extraction_author("ScienceDirectDataSource","1-50","knowledge")
+# 此模块经过验证可用，一些常见的异常已经被处理
