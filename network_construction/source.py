@@ -1,14 +1,11 @@
 # encoding:utf-8
 # import utils.datasource as ds
-#import data_platform.document as ds
-#import data_platform as dp
-#from data_platform.datasource import ScienceDirectDS as ScienceDirectDataSource
+# import data_platform.document as ds
+# import data_platform as dp
+# from data_platform.datasource import ScienceDirectDS as ScienceDirectDataSource
 # from utils.datasource import OrientDBDataSource
-import re
-import data_platform.datasource as ds
 from data_platform.config import ConfigManager
-from data_platform.datasource.science_direct import ScienceDirectDS, ScienceDirectFactory
-
+from data_platform.datasource.science_direct import ScienceDirectDS
 from pathlib import Path
 import os
 current_path = Path(os.getcwd())
@@ -21,7 +18,7 @@ config = ConfigManager({
 })
 
 
-def search_author(source,document):
+def search_author(source, document):
     """source(STRING) is the name of the database; document is a string just like 1-100_300-400"""
     if source == "ScienceDirectDataSource":
         ds = ScienceDirectDS(config)
@@ -61,7 +58,7 @@ def search_author(source,document):
     return author_struct_array
 
 
-def search_citation(source,document):
+def search_citation(source, document):
     """source(STRING) is the name of the database; document is a string just like 1-100_300-400"""
     if source == "ScienceDirectDataSource":
         ds = ScienceDirectDS(config)
@@ -99,7 +96,7 @@ def search_citation(source,document):
     return citation_struct_array
 
 
-def search_text(source,document):
+def search_text(source, document):
     """source(STRING) is the name of the database; document is a string just like 1-100_300-400"""
     if source == "ScienceDirectDataSource":
         ds = ScienceDirectDS(config)
@@ -134,7 +131,7 @@ def search_text(source,document):
     return text_struct_array
 
 
-def search_all(source,document):
+def search_all(source, document):
     """source(STRING) is the name of the database; document is a string just like 1-100_300-400"""
     if source == "ScienceDirectDataSource":
         ds = ScienceDirectDS(config)
@@ -175,5 +172,5 @@ def search_all(source,document):
                 all_struct_array.append(all_struct)
     return all_struct_array
 
-#if __name__ == '__main__':
-    #print(search_all("ScienceDirectDataSource","1-10"))
+# if __name__ == '__main__':
+    # print(search_all("ScienceDirectDataSource","1-10"))

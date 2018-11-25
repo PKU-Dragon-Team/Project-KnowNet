@@ -1,14 +1,7 @@
 # encoding:utf-8
-import re
-import data_platform.datasource as ds
 from data_platform.config import ConfigManager
-from data_platform.datasource.science_direct import ScienceDirectDS, ScienceDirectFactory
-
 from pathlib import Path
 import os
-
-import re
-import textblob
 import source as s
 import database as db
 import algorithm
@@ -22,8 +15,8 @@ config = ConfigManager({
 })
 
 
-#node == "noun" , relation = "co"表示名词的共现关系，暂时只实现这一种，后续的根据需求再增加
-#node == "noun" , realtion = "wordnet"表示名词，使用的关系是由wordnet得到的词语在wordnet中的相似性
+# node == "noun" , relation = "co"表示名词的共现关系，暂时只实现这一种，后续的根据需求再增加
+# node == "noun" , realtion = "wordnet"表示名词，使用的关系是由wordnet得到的词语在wordnet中的相似性
 def relation_extraction_text(source, document, node, relation, database):
     text = s.search_text(source, document)
     if node == "noun" and relation == "co":
@@ -33,8 +26,8 @@ def relation_extraction_text(source, document, node, relation, database):
             for r in relation:
                 node1_key = "word_" + r[0]
                 node2_key = "word_" + r[1]
-                #relation_struct = db.search_word_relation(node1_key,node2_key, database)
-                relation_struct_ori = db.search_word_relation(node1_key,node2_key, database)
+                # relation_struct = db.search_word_relation(node1_key,node2_key, database)
+                relation_struct_ori = db.search_word_relation(node1_key, node2_key, database)
                 if relation_struct_ori:
                     relation_struct = relation_struct_ori.values()
                     relation_struct = list(relation_struct)[0]
@@ -240,7 +233,7 @@ def relation_extraction_paper(source, document, relation, database):
         for a in all:
             node1_doc_doi = "paper_" + str(a['doc_doi'])
             node1_title = a['title']
-            for key,value in a['bib_detail'].items():
+            for key, value in a['bib_detail'].items():
                 if ('doi' in value.keys()):
                     node2_doc_doi = "paper_" + value['doi']
                     relation_struct = {}
@@ -251,11 +244,12 @@ def relation_extraction_paper(source, document, relation, database):
                             relation_struct['node2_title'] = value['title']['maintitle']
                     else:
                         relation_struct['node2_title'] = "null"
-                    db.insert_paper_relation(node1_doc_doi,node2_doc_doi,relation_struct,database)
+                    db.insert_paper_relation(node1_doc_doi, node2_doc_doi, relation_struct, database)
 
     return 0
 
-#relation = "all"此时暂时实现all，表示抽取共著和引用关系的作者
+
+# relation = "all"此时暂时实现all，表示抽取共著和引用关系的作者
 def relation_extraction_author(source, document, relation, database):
     all = s.search_all(source, document)
     if relation == "all":
@@ -314,7 +308,7 @@ def relation_extraction_author(source, document, relation, database):
                             relation_struct = list(relation_struct)[0]
                         else:
                             relation_struct = {}
-                        #print(relation_struct)
+                        # print(relation_struct)
                         if relation_struct:
                             if relation_struct['relation'] == "co":
                                 relation_struct['cite_count'] = 1
@@ -333,7 +327,7 @@ def relation_extraction_author(source, document, relation, database):
     return 0
 
 
-#relation = "paper_author"
+# relation = "paper_author"
 def relation_extraction_paper_author(source, document, relation, database):
     all = s.search_all(source, document)
     if relation == "paper_author":
@@ -351,7 +345,7 @@ def relation_extraction_paper_author(source, document, relation, database):
     return 0
 
 
-#relation = "paper_word"
+# relation = "paper_word"
 def relation_extraction_paper_word(source, document, relation, database):
     all = s.search_all(source, document)
     if relation == "paper_word":
@@ -367,6 +361,6 @@ def relation_extraction_paper_word(source, document, relation, database):
                 db.insert_paper_author_relation(node1_doc_doi, node2_word, relation_struct, database)
     return 0
 
-#if __name__ == '__main__':
-    #relation_extraction_author("ScienceDirectDataSource","1-10","all","knowledge4")
-    #经过测试可用！
+# if __name__ == '__main__':
+    # relation_extraction_author("ScienceDirectDataSource","1-10","all","knowledge4")
+    # 经过测试可用！
