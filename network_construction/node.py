@@ -1,10 +1,10 @@
 # encoding:utf-8
+import os
+from pathlib import Path
 from data_platform.config import ConfigManager
 import source as s
 import database as db
 import algorithm
-from pathlib import Path
-import os
 current_path = Path(os.getcwd())
 data_path = current_path / 'data'
 xml_path = data_path / 'unprocessed_articles_xml'
@@ -29,17 +29,17 @@ def node_extraction_author(source, document, database):
         node_struct['email'] = "null"
         db.insert_author(node_key, node_struct, database)
     for c in citations:
-        for key, value in c['bib_detail'].items():
-            if('authors' in value.keys()):
+        for value in c['bib_detail'].items():
+            if 'authors' in value.keys():
                 author_names = value['authors']
                 for each in author_names:
-                    if('given-name' in each.keys() and 'surname' in each.keys()):
+                    if 'given-name' in each.keys() and 'surname' in each.keys():
                         author_name = each['given-name'] + each['surname']
                     else:
-                        if('given-name' in each.keys()):
+                        if 'given-name' in each.keys():
                             author_name = each['given-name']
                         else:
-                            if ('surname' in each.keys()):
+                            if 'surname' in each.keys():
                                 author_name = each['surname']
                             else:
                                 author_name = "null"
@@ -55,9 +55,9 @@ def node_extraction_author(source, document, database):
 # if we can not get a property; the default value is "null"
 # for all the citation papers, if there is no bib_number property, the default number is -1
 def node_extraction_paper(source, document, database):
-    all = s.search_all(source, document)
+    all_ = s.search_all(source, document)
     citations = s.search_citation(source, document)
-    for a in all:
+    for a in all_:
         doc_doi = a['doc_doi']
         node_key = "paper_" + doc_doi
         node_struct = {}
@@ -67,14 +67,14 @@ def node_extraction_paper(source, document, database):
         node_struct['bib_number'] = a['bib_number']
         db.insert_paper(node_key, node_struct, database)
     for c in citations:
-        for key, value in c['bib_detail'].items():
-            if('doi' in value.keys()):
+        for value in c['bib_detail'].items():
+            if 'doi' in value.keys():
                 docdoi = value['doi']
                 node_key = "paper_" + docdoi
                 node_struct = {}
                 node_struct['doc_doi'] = docdoi
                 if 'title' in value.keys():
-                    if('maintitle' in value['title'].keys()):
+                    if 'maintitle' in value['title'].keys():
                         node_struct['title'] = value['title']['maintitle']
                     else:
                         node_struct['title'] = "null"

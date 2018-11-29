@@ -4,10 +4,10 @@
 # import data_platform as dp
 # from data_platform.datasource import ScienceDirectDS as ScienceDirectDataSource
 # from utils.datasource import OrientDBDataSource
+import os
+from pathlib import Path
 from data_platform.config import ConfigManager
 from data_platform.datasource.science_direct import ScienceDirectDS
-from pathlib import Path
-import os
 current_path = Path(os.getcwd())
 data_path = current_path / 'data'
 xml_path = data_path / 'unprocessed_articles_xml'
@@ -34,21 +34,21 @@ def search_author(source, document):
         doc_num_start = doc_num_range[0]
         doc_num_end = doc_num_range[1]
         for i in range(int(doc_num_start), int(doc_num_end)+1):
-            if (('_default', str(i)) in docset.keys()):
+            if ('_default', str(i)) in docset.keys():
                 doc = docset[('_default', str(i))]
                 coredata = doc.metadatas['coredata']
                 coredata_dict = coredata.meta_dict
-                if('creator' in coredata_dict.keys()):
+                if 'creator' in coredata_dict.keys():
                     creator = coredata_dict['creator']
                 else:
                     creator = 'none'
                 author_struct = {}
                 author_struct['doc_id'] = i
-                if ('doi' in coredata_dict.keys()):
+                if 'doi' in coredata_dict.keys():
                     author_struct['doc_doi'] = coredata_dict['doi']
                 else:
                     author_struct['doc_doi'] = 'none'
-                if ('title' in coredata_dict.keys()):
+                if 'title' in coredata_dict.keys():
                     author_struct['title'] = coredata_dict['title']
                 else:
                     author_struct['title'] = 'none'
@@ -74,7 +74,7 @@ def search_citation(source, document):
         doc_num_start = doc_num_range[0]
         doc_num_end = doc_num_range[1]
         for i in range(int(doc_num_start), int(doc_num_end)+1):
-            if (('_default', str(i)) in docset.keys()):
+            if ('_default', str(i)) in docset.keys():
                 doc = docset[('_default', str(i))]
                 coredata = doc.metadatas['coredata']
                 coredata_dict = coredata.meta_dict
@@ -82,11 +82,11 @@ def search_citation(source, document):
                 ref_dict = ref.meta_dict
                 citation_struct = {}
                 citation_struct['doc_id'] = i
-                if ('doi' in coredata_dict.keys()):
+                if 'doi' in coredata_dict.keys():
                     citation_struct['doc_doi'] = coredata_dict['doi']
                 else:
                     citation_struct['doc_doi'] = 'none'
-                if ('title' in coredata_dict.keys()):
+                if 'title' in coredata_dict.keys():
                     citation_struct['title'] = coredata_dict['title']
                 else:
                     citation_struct['title'] = 'none'
@@ -112,17 +112,17 @@ def search_text(source, document):
         doc_num_start = doc_num_range[0]
         doc_num_end = doc_num_range[1]
         for i in range(int(doc_num_start), int(doc_num_end)+1):
-            if (('_default', str(i)) in docset.keys()):
+            if ('_default', str(i)) in docset.keys():
                 doc = docset[('_default', str(i))]
                 coredata = doc.metadatas['coredata']
                 coredata_dict = coredata.meta_dict
                 text_struct = {}
                 text_struct['doc_id'] = i
-                if ('doi' in coredata_dict.keys()):
+                if 'doi' in coredata_dict.keys():
                     text_struct['doc_doi'] = coredata_dict['doi']
                 else:
                     text_struct['doc_doi'] = 'none'
-                if ('title' in coredata_dict.keys()):
+                if 'title' in coredata_dict.keys():
                     text_struct['title'] = coredata_dict['title']
                 else:
                     text_struct['title'] = 'none'
@@ -147,7 +147,7 @@ def search_all(source, document):
         doc_num_start = doc_num_range[0]
         doc_num_end = doc_num_range[1]
         for i in range(int(doc_num_start), int(doc_num_end) + 1):
-            if (('_default', str(i)) in docset.keys()):
+            if ('_default', str(i)) in docset.keys():
                 doc = docset[('_default', str(i))]
                 coredata = doc.metadatas['coredata']
                 coredata_dict = coredata.meta_dict
@@ -156,11 +156,11 @@ def search_all(source, document):
                 ref_dict = ref.meta_dict
                 all_struct = {}
                 all_struct['doc_id'] = i
-                if ('doi' in coredata_dict.keys()):
+                if 'doi' in coredata_dict.keys():
                     all_struct['doc_doi'] = coredata_dict['doi']
                 else:
                     all_struct['doc_doi'] = 'none'
-                if ('title' in coredata_dict.keys()):
+                if 'title' in coredata_dict.keys():
                     all_struct['title'] = coredata_dict['title']
                 else:
                     all_struct['title'] = 'none'
