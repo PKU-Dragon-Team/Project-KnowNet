@@ -22,4 +22,3 @@ class BaseDataSource(ABC):
     @abstractmethod
     def query(self, query: Text, *args, **kwargs) -> Any:
         """Run query on data source."""
-        pass

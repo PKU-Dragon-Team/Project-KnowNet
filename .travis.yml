@@ -19,3 +19,4 @@ script:
   - flake8 $TESTFOLDER
   - pylint $TESTFOLDER
   - mypy $TESTFOLDER
+  - python test/test_$TESTFOLDER.py
