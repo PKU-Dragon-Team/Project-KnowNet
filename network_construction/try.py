@@ -1,8 +1,8 @@
 # encoding:utf-8
+import os
+from pathlib import Path
 from data_platform.config import ConfigManager
 from data_platform.datasource.networkx import NetworkXDS, GraphValType
-from pathlib import Path
-import os
 
 
 def init():

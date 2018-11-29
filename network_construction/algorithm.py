@@ -1,8 +1,9 @@
 # encoding=utf-8
-import ssl
+# import ssl
 import nltk
-from nltk.tokenize import WordPunctTokenizer
 import nltk.stem
+from nltk.tokenize import WordPunctTokenizer
+from nltk.corpus import wordnet as wn
 # from nltk.corpus import brown
 # from nltk.corpus import conll2000
 from rake_nltk import Rake
@@ -12,8 +13,7 @@ from textblob import Word
 # from gensim.test.utils import common_texts, get_tmpfile
 from gensim.models import word2vec
 # import collections
-from nltk.corpus import wordnet as wn
-ssl._create_default_https_context = ssl._create_unverified_context
+# ssl._create_default_https_context = ssl._create_unverified_context
 # nltk.download()
 # this class is used for chunk.
 
@@ -59,12 +59,12 @@ class UnigramChunker(nltk.ChunkParserI):
         return nltk.chunk.conlltags2tree(conlltags)
 
 
-"""
-test_sents = conll2000.chunked_sents("test.txt", chunk_types=["NP"])
-train_sents = conll2000.chunked_sents("train.txt", chunk_types=["NP"])
-unigram_chunker = UnigramChunker(train_sents)
-print(unigram_chunker.evaluate(test_sents))
-"""
+
+# test_sents = conll2000.chunked_sents("test.txt", chunk_types=["NP"])
+# train_sents = conll2000.chunked_sents("train.txt", chunk_types=["NP"])
+# unigram_chunker = UnigramChunker(train_sents)
+# print(unigram_chunker.evaluate(test_sents))
+
 
 # rake-nltk
 # Uses stopwords for english from NLTK, and all puntuation characters by
@@ -178,29 +178,6 @@ def para2senc2words(text):
         words = wordtokenizer(i)
         result.append(words)
     return result
-
-
-'''
-#this is the original relation extraction method
-def extract_relation_noun_co(text):
-    sentences = splitSentence(text)
-    relation = []
-    for sentence in sentences:
-        words = nltk.word_tokenize(sentence)
-        word_tag = nltk.pos_tag(words)
-        number = 0
-        temp = []
-        for word in word_tag:
-            if word[1] == "NN" or word[1] == "NNP":
-                number += 1
-                if word[0] not in temp:
-                    temp.append(word[0])
-        if len(temp) >= 2:
-            for i in range(0,len(temp)-1):
-                for j in range(i+1, len(temp)):
-                    relation.append((temp[i], temp[j], "co"))
-    return relation
-'''
 
 
 def extract_relation_noun_co(text):
@@ -391,10 +368,9 @@ def word2vec_result(word):
 # 词干提取 fishing-fish shops-shop
 def word_stem(word):
     s = nltk.stem.SnowballStemmer('english')
-    if(s.stem(word)):
+    if s.stem(word):
         return s.stem(word)
-    else:
-        return word
+    return word
 
 
 # 词形还原 octopi-octopus
@@ -405,10 +381,9 @@ def word_lemmatized(word):
 
 # 返回一个词语所在的词语集合，一个词语会在多个词语集合中
 def wordnet_synsets(word):
-    if(wn.synsets(word)):
+    if wn.synsets(word):
         return wn.synsets(word)
-    else:
-        return 1
+    return 1
 
 
 # 输入一个同义词集，返回词集中的所有词条
@@ -419,14 +394,13 @@ def wordnet_lemma_names(wordset):
 def wordnet_similarity(word1, word2):
     worda = word_stem(word1)
     wordb = word_stem(word2)
-    if(wordnet_synsets(worda) != 1 and wordnet_synsets(wordb) != 1):
+    if wordnet_synsets(worda) != 1 and wordnet_synsets(wordb) != 1:
         word1_synsets = wordnet_synsets(worda)
         word2_synsets = wordnet_synsets(wordb)
         word1_synset = word1_synsets[0]
         word2_synset = word2_synsets[0]
         return word1_synset.path_similarity(word2_synset)
-    else:
-        return 0
+    return 0
 # if __name__ == '__main__':
     # print(para2senc2words('I am very excited about the next generation of Apple products. But
     #  I am csk! So I am not afraid of you. I am very excited about the next generation of

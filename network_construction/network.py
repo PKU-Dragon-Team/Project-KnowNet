@@ -1,7 +1,7 @@
 # encoding:utf-8
-from data_platform.config import ConfigManager
 from pathlib import Path
 import os
+from data_platform.config import ConfigManager
 import node as nd
 import relation as rela
 
