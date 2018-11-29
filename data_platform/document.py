@@ -347,7 +347,6 @@ class Paragraph(Box):
 
 class Inline(Element):
     """Abstract Base class for any in-line element."""
-    pass
 
 
 class Text(Inline):
