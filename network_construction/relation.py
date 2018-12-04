@@ -2,9 +2,9 @@
 import os
 from pathlib import Path
 from data_platform.config import ConfigManager
-import source as s
-import database as db
-import algorithm
+from . import source as s
+from . import database as db
+from . import algorithm
 current_path = Path(os.getcwd())
 data_path = current_path / 'data'
 xml_path = data_path / 'unprocessed_articles_xml'
