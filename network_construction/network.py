@@ -2,8 +2,8 @@
 from pathlib import Path
 import os
 from data_platform.config import ConfigManager
-import node as nd
-import relation as rela
+from . import node as nd
+from . import relation as rela
 
 current_path = Path(os.getcwd())
 data_path = current_path / 'data'
