@@ -2,11 +2,25 @@
 
 A project building for knowledge representation in scientific articles
 
+Build status: [![Build Status](https://travis-ci.com/PKU-Dragon-Team/Project-KnowNet.svg?branch=master)](https://travis-ci.com/PKU-Dragon-Team/Project-KnowNet)
+
 ## Current Status
 
 ### data_fetcher
 
 To be finished.
+
+### network_construction
+
+**Working** (details to be finished)
+
+***TODO***: CI compatible
+
+### network_analysis
+
+**Working** (details to be finished)
+
+***TODO***: CI compatible
 
 ### data_platform
 
@@ -14,8 +28,8 @@ To be finished.
 2. datasource: _Partially Working_
     - json (DocDataSource): **Working** (except for _wildcard filtering_)
     - networkx (GraphDataSource): **Working** (except for _wildcard filtering_)
-    - sqlite (RowDataSource): <span style="color:grey;">Not yet implemented</span>
-    - science_direct (DocDataSource): _Somehow Working_ (needs refactoring)
-3. utility: <span style="color:grey;">Not yet implemented</span>
-4. config: **Working** (except for _schema checking_)
-5. log: <span style="color:grey;">Not yet implemented</span>
+    - sqlite (RowDataSource): **Working** (except for _wildcard filtering_)
+    - science_direct (DocDataSource): **Working** (except for _wildcard filtering_)
+3. utility: Not yet implemented
+4. config: **Working**
+5. log: Not yet implemented

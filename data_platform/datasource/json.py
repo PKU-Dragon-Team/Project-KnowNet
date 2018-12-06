@@ -1,24 +1,22 @@
-"""data source class for json as example of DocDataSource
-"""
+"""data source class for json as example of DocDataSource."""
 
 import json
 from pathlib import Path
-from typing import Dict, Iterable, List, NoReturn, Set, Tuple, Union
+from typing import Dict, Iterable, List, NoReturn, Optional, Set, Text
 
-from . import base as _base
 from ..config import ConfigManager
+from .abc.doc import DocDataSource, DocKeyPair, DocKeyType, DocValDict
+from .exception import NotSupportedError
 
-_DOC_KEY_T = Tuple[str, str]
-_DOC_KEY_UT = Union[Dict[_DOC_KEY_T, Dict], List[_DOC_KEY_T], _DOC_KEY_T]
 
-
-class JSONDS(_base.DocDataSource):
-    """DocDataSource using JSON and in-memory dict as data storage
+class JSONDS(DocDataSource):
+    """DocDataSource using JSON and in-memory dict as data storage.
 
     support multi-docsets (specify "docset_id" in key)
     """
-    _default_doc_key = ('_default', '_default')
-    _wildcard_doc_key = ('@*', '@*')
+
+    _default_doc_key = DocKeyPair('_default', '_default')
+    _wildcard_doc_key = DocKeyPair('@*', '@*')
 
     def __init__(self, config: ConfigManager, *args, **kwargs) -> None:
         super().__init__(config, *args, **kwargs)
@@ -32,8 +30,8 @@ class JSONDS(_base.DocDataSource):
             self._loc = path_loc.parent
 
         self._config = config
-        self._data: Dict[str, Dict] = {}
-        self._dirty_bits: Set[str] = set()
+        self._data: Dict[Text, Dict] = {}
+        self._dirty_bits: Set[Text] = set()
 
         self._load()
 
@@ -41,8 +39,7 @@ class JSONDS(_base.DocDataSource):
         self.flush()
 
     def _dump(self) -> None:
-        """dump in-memory data into local file
-        """
+        """Dump in-memory data into local file."""
         for docset in self._dirty_bits.copy():
             jsonfile = self._loc / (docset + '.json')
             if docset not in self._data:
@@ -55,8 +52,7 @@ class JSONDS(_base.DocDataSource):
             self._dirty_bits.remove(docset)
 
     def _load(self) -> None:
-        """load local file into memory
-        """
+        """Load local file into memory."""
         self._data.clear()
         self._dirty_bits.clear()
 
@@ -64,22 +60,11 @@ class JSONDS(_base.DocDataSource):
             with json_file.open('r') as f:
                 self._data[json_file.stem] = json.load(f)
 
-    def _filter(self, key: _DOC_KEY_UT) -> List[_DOC_KEY_T]:
-        ds_d_c: List[Tuple] = []
-
-        if isinstance(key, tuple):
-            ds_d_c.append((key[0], key[1], None))
-
-        if isinstance(key, list):
-            for ds, d in key:
-                ds_d_c.append((ds, d, None))
-
-        if isinstance(key, dict):
-            for (ds, d), c in key.items():
-                ds_d_c.append((ds, d, c))
+    def _filter(self, key: DocKeyType) -> List[DocKeyPair]:
+        ds_d_c = self._format_doc_key(key)
 
         result = set()
-        for docset_name, doc_name, conditions in ds_d_c:
+        for docset_name, doc_name, _ in ds_d_c:
             is_docset_wildcard = docset_name.startswith('@*')
             is_doc_wildcard = doc_name.startswith('@*')
             has_wildcard = is_docset_wildcard or is_doc_wildcard
@@ -95,38 +80,37 @@ class JSONDS(_base.DocDataSource):
                     if is_doc_wildcard:
                         for d_name in self._data[ds_name]:
                             # TODO: doc wildcards and filters
-                            result.add((ds_name, d_name))
+                            result.add(DocKeyPair(ds_name, d_name))
                     else:
-                        result.add((ds_name, doc_name))
+                        result.add(DocKeyPair(ds_name, doc_name))
             else:
-                result.add((docset_name, doc_name))
+                result.add(DocKeyPair(docset_name, doc_name))
 
         return list(result)
 
     def flush(self) -> None:
-        """Write pending edit to disk files.
-        """
+        """Write pending edit to disk files."""
         self._dump()
 
     def reload(self) -> None:
-        """Force reload disk files into memory.
-        """
+        """Force reload disk files into memory."""
         self.flush()
         self._load()
 
     def clear(self) -> None:
-        """Clean in-memory and local files
-        """
+        """Clean in-memory and local files."""
         self._dirty_bits.update(self._data.keys())
         self._data.clear()
         self.flush()
 
-    def query(self, query: str, data: Dict) -> NoReturn:
-        raise _base.NotSupportedError("JSON data source has no query method.")
+    def query(self, query: str, *args, **kwargs) -> NoReturn:
+        raise NotSupportedError("JSON data source has no query method.")
 
-    def create_doc(self, key: _DOC_KEY_UT = _default_doc_key, val: Dict = {}) -> List[_DOC_KEY_T]:
-        """Create doc in data source
-        """
+    def create_doc(self, key: DocKeyType = _default_doc_key, val: Optional[DocValDict] = None) -> List[DocKeyPair]:
+        """Create doc in data source."""
+        if val is None:
+            val = {}
+
         result = []
         target = self._filter(key)
 
@@ -134,22 +118,24 @@ class JSONDS(_base.DocDataSource):
             if ds not in self._data:
                 self._data[ds] = {}
             self._data[ds][d] = val
-            result.append((ds, d))
+            result.append(DocKeyPair(ds, d))
             self._dirty_bits.add(ds)
 
         return result
 
-    def read_doc(self, key: _DOC_KEY_UT = _wildcard_doc_key) -> Dict[_DOC_KEY_T, Dict]:
+    def read_doc(self, key: DocKeyType = _wildcard_doc_key) -> Dict[DocKeyPair, DocValDict]:
         target = self._filter(key)
-        result = {}
+        result: Dict[DocKeyPair, DocValDict] = {}
         for ds, d in target:
             if ds in self._data:
                 if d in self._data[ds]:
-                    result[(ds, d)] = self._data[ds][d]
-
+                    result[DocKeyPair(ds, d)] = self._data[ds][d]
         return result
 
-    def update_doc(self, key: _DOC_KEY_UT = _default_doc_key, val: Dict = {}) -> List[_DOC_KEY_T]:
+    def update_doc(self, key: DocKeyType = _default_doc_key, val: Optional[DocValDict] = None) -> List[DocKeyPair]:
+        if val is None:
+            val = {}
+
         result = []
         target = self._filter(key)
 
@@ -159,12 +145,12 @@ class JSONDS(_base.DocDataSource):
             if d not in self._data[ds]:
                 self._data[ds][d] = {}
             self._data[ds][d].update(val)
-            result.append((ds, d))
+            result.append(DocKeyPair(ds, d))
             self._dirty_bits.add(ds)
 
         return result
 
-    def delete_doc(self, key: _DOC_KEY_UT = _default_doc_key) -> int:
+    def delete_doc(self, key: DocKeyType = _default_doc_key) -> int:
         result = 0
         target = self._filter(key)
 
@@ -176,6 +162,3 @@ class JSONDS(_base.DocDataSource):
                     self._dirty_bits.add(ds)
 
         return result
-
-
-_base.DataSourceFactory.register("json", JSONDS)
