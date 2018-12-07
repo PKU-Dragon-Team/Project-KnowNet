@@ -5,12 +5,24 @@ matrix:
       env: TESTFOLDER=data_platform
     - python: 3.6
       env: TESTFOLDER=data_fetcher
+    - python: 3.6
+      env: TESTFOLDER=network_analysis
+    - python: 3.6
+      env: TESTFOLDER=network_construction
     - python: 3.7
       env: TESTFOLDER=data_platform
       dist: xenial
       sudo: true
     - python: 3.7
       env: TESTFOLDER=data_fetcher
+      dist: xenial
+      sudo: true
+    - python: 3.7
+      env: TESTFOLDER=network_construction
+      dist: xenial
+      sudo: true
+    - python: 3.7
+      env: TESTFOLDER=network_analysis
       dist: xenial
       sudo: true
 install:
