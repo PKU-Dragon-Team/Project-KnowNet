@@ -14,13 +14,9 @@ To be finished.
 
 **Working** (details to be finished)
 
-***TODO***: CI compatible
-
 ### network_analysis
 
 **Working** (details to be finished)
-
-***TODO***: CI compatible
 
 ### data_platform
 

@@ -1,5 +1,4 @@
 git+https://gitlab.com/pycqa/flake8
-community
 defusedxml
 gensim
 lxml
@@ -9,6 +8,8 @@ nltk
 rake-nltk
 numpy
 networkx
+pyecharts
 pylint
+python-louvain
 textblob
 yapf
