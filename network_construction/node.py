@@ -2,9 +2,9 @@
 import os
 from pathlib import Path
 from data_platform.config import ConfigManager
-import source as s
-import database as db
-import algorithm
+from . import source as s
+from . import database as db
+from . import algorithm
 current_path = Path(os.getcwd())
 data_path = current_path / 'data'
 xml_path = data_path / 'unprocessed_articles_xml'
@@ -63,6 +63,7 @@ def node_extraction_paper(source, document, database):
         node_struct = {}
         node_struct['doc_doi'] = doc_doi
         node_struct['title'] = a['title']
+        node_struct['name'] = a['title']
         node_struct['author_number'] = a['author_number']
         node_struct['bib_number'] = a['bib_number']
         db.insert_paper(node_key, node_struct, database)
@@ -76,10 +77,13 @@ def node_extraction_paper(source, document, database):
                 if 'title' in value.keys():
                     if 'maintitle' in value['title'].keys():
                         node_struct['title'] = value['title']['maintitle']
+                        node_struct['name'] = value['title']['maintitle']
                     else:
                         node_struct['title'] = "null"
+                        node_struct['name'] = "null"
                 else:
                     node_struct['title'] = "null"
+                    node_struct['name'] = "null"
                 node_struct['author_number'] = len(value['authors'])
                 node_struct['bib_number'] = -1
                 db.insert_paper(node_key, node_struct, database)
@@ -97,6 +101,7 @@ def node_extraction_text(source, document, node, database):
                 node_key = "word_" + w
                 node_struct = {}
                 node_struct['word'] = w
+                node_struct['name'] = w
                 db.insert_word(node_key, node_struct, database)
     if node == "adj":
         for a in text:
@@ -106,6 +111,7 @@ def node_extraction_text(source, document, node, database):
                 node_key = "word_" + w
                 node_struct = {}
                 node_struct['word'] = w
+                node_struct['name'] = w
                 db.insert_word(node_key, node_struct, database)
     if node == "keyword":
         for a in text:
@@ -115,6 +121,7 @@ def node_extraction_text(source, document, node, database):
                 node_key = "word_" + w
                 node_struct = {}
                 node_struct['word'] = w
+                node_struct['name'] = w
                 db.insert_word(node_key, node_struct, database)
     if node == "noun_phrase":
         for a in text:
@@ -124,6 +131,7 @@ def node_extraction_text(source, document, node, database):
                 node_key = "word_" + w
                 node_struct = {}
                 node_struct['word'] = w
+                node_struct['name'] = w
                 db.insert_word(node_key, node_struct, database)
     if node == "ner":
         for a in text:
@@ -133,6 +141,7 @@ def node_extraction_text(source, document, node, database):
                 node_key = "word_" + w
                 node_struct = {}
                 node_struct['word'] = w
+                node_struct['name'] = w
                 db.insert_word(node_key, node_struct, database)
     if node == "verb":
         for a in text:
@@ -142,6 +151,7 @@ def node_extraction_text(source, document, node, database):
                 node_key = "word_" + w
                 node_struct = {}
                 node_struct['word'] = w
+                node_struct['name'] = w
                 db.insert_word(node_key, node_struct, database)
     return 0
 
