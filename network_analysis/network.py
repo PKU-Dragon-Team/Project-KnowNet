@@ -3,6 +3,7 @@
 import os
 import math
 from pathlib import Path
+from typing import Any, Dict, Text
 
 import networkx as nx
 import community
@@ -25,7 +26,7 @@ class Net:
     size = 0                    # 网络的大小，即边数
     aver_degree = 0             # 网络的度均值（忽略入度和出度的区别）
     density = 0                 # 网络的密度
-    attribute = dict()          # 网络的固有属性，来自 B 数据处理模块
+    attribute: Dict[Text, Any] = {}          # 网络的固有属性，来自 B 数据处理模块
     net_type = 'none'           # 确定网络类型
     weight_type = 'none'       # 确定网络边权类型
 
