@@ -19,7 +19,3 @@ class TestDataFetcher(ut.TestCase):
 
     def tearDown(self):
         pass
-
-
-if __name__ == '__main__':
-    ut.main()
