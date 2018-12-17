@@ -4,6 +4,8 @@ import tempfile
 import unittest as ut
 from pathlib import Path
 
+from .base import BaseTestDataSource
+
 root_folder = Path(os.getcwd())
 sys.path.append(str(root_folder))
 
@@ -29,8 +31,7 @@ SAMPLE_DOC = {
             '''This document gives coding conventions for the Python code comprising the standard library in the main Python distribution. '''
             '''Please see the companion informational PEP describing style guidelines for the C code in the C implementation of Python [1].''',
             '''his document and PEP 257 (Docstring Conventions) were adapted from Guido's original Python Style Guide essay, '''
-            '''with some additions from Barry's style guide [2].''',
-            '''This style guide evolves over time as additional conventions are identified and past '''
+            '''with some additions from Barry's style guide [2].''', '''This style guide evolves over time as additional conventions are identified and past '''
             '''conventions are rendered obsolete by changes in the language itself.''',
             '''Many projects have their own coding style guidelines. In the event of any conflicts, '''
             '''such project-specific guides take precedence for that project.'''
@@ -68,29 +69,7 @@ SAMPLE_DOC2 = {
 }
 
 
-class TestDocDataSource(ut.TestCase):
-    @classmethod
-    def get_test_class(cls):
-        """Import and return the test class"""
-
-        raise NotImplementedError
-
-    def get_test_instance(self, temp_location):
-        """Initialize and return the test class.
-        Use temp_location as storage if necessary"""
-
-        raise NotImplementedError
-
-    def setUp(self):
-        pass
-
-    def test_import(self):
-        self.get_test_class()
-
-    def test_init(self):
-        with tempfile.TemporaryDirectory(prefix='test_', suffix='_docds') as tmpdir:
-            self.get_test_instance(tmpdir)
-
+class TestDocDataSource(BaseTestDataSource):
     def test_create(self):
         from data_platform.datasource.abc.doc import DocKeyPair
 
@@ -165,9 +144,6 @@ class TestDocDataSource(ut.TestCase):
 
             del ds
 
-    def tearDown(self):
-        pass
-
 
 class TestJSONDS(TestDocDataSource):
     @classmethod
@@ -181,3 +157,20 @@ class TestJSONDS(TestDocDataSource):
         config = ConfigManager({"init": {"location": temp_location}})
         jsonds = JSONDS(config)
         return jsonds
+
+
+@ut.skip('function-restricted implementation')
+class TestScienceDirectDS(TestDocDataSource):
+    @classmethod
+    def get_test_class(cls):
+        from data_platform.datasource import ScienceDirectDS
+
+        return ScienceDirectDS
+
+    def get_test_instance(self, temp_location):
+        from data_platform.config import ConfigManager
+        from data_platform.datasource import ScienceDirectDS
+
+        config = ConfigManager({"init": {"location": temp_location}})
+        ds = ScienceDirectDS(config)
+        return ds
