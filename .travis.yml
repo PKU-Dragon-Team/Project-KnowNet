@@ -20,4 +20,4 @@ script:
   - flake8 network_construction
   - pylint network_construction
   - mypy network_construction
-  - python test/runtest.py
+  - python runtest.py
