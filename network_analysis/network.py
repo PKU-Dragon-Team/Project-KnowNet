@@ -178,8 +178,7 @@ class Net:
             nodelist = [item[0] for item in nodelist]
         if n < 0:
             return nodelist      # 返回所有结果
-        else:
-            return nodelist[:n]  # 返回前n个结果
+        return nodelist[:n]  # 返回前n个结果
 
     # 以下是可视化输出的方法
     def draw_network(self, layout="force"):
