@@ -108,6 +108,9 @@ def insert_paper_word_relation(node1_key, node2_key, relation_struct, database_n
     nxds.create_edge({(database_name, (node1_key, node2_key)): {}}, relation_struct)
 
 
+def flush():
+    nxds.flush()
+
 # if __name__ == '__main__':
     # create_database("knowledge6")
     # 可成功建立数据库
