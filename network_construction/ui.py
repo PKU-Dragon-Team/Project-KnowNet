@@ -1,11 +1,12 @@
 # encoding=utf-8
-from bottle import route, view, run, request, template, get, post, error, redirect
+from pathlib import Path
+import os
+from bottle import route, view, run, request, post
 import network_construction.network as nc
 import network_construction.database as db
 from data_platform.config import ConfigManager
 from data_platform.datasource.networkx import NetworkXDS
-from pathlib import Path
-import os
+
 
 @route('/construction')
 @view('construction')
@@ -177,11 +178,6 @@ def do_other():
             'edge_number': size}
     print(data)
     return data
-
-
-@error(404)
-def error404(error):
-    return '请访问正确的地址，URL加上/construction'
 
 
 run(host='localhost', port=8080, reloader=True, debug=True)
