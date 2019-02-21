@@ -59,36 +59,29 @@ class UnigramChunker(nltk.ChunkParserI):
         return nltk.chunk.conlltags2tree(conlltags)
 
 
-
 # test_sents = conll2000.chunked_sents("test.txt", chunk_types=["NP"])
 # train_sents = conll2000.chunked_sents("train.txt", chunk_types=["NP"])
 # unigram_chunker = UnigramChunker(train_sents)
 # print(unigram_chunker.evaluate(test_sents))
-
-
 # rake-nltk
 # Uses stopwords for english from NLTK, and all puntuation characters by
 # default
 # r = Rake()
-
 # Extraction given the text.
 # r.extract_keywords_from_text("Python is a high-level, general-purpose programming language.")
 # print(r.get_ranked_phrases())
 # print(r.get_ranked_phrases_with_scores())
 # print(r.get_word_degrees())
 # print(r.get_word_frequency_distribution())
-
 # Extraction given the list of strings where each string is a sentence.
 # r.extract_keywords_from_sentences(["Uses stopwords for english from NLTK, and all puntuation
 # characters by","Uses stopwords for english from NLTK, and all puntuation characters by"])
-
 # text-blob http://textblob.readthedocs.io/en/dev/quickstart.html
 # text-blob wordnet interface http://www.nltk.org/howto/wordnet.html
 # w = Word("octopi")
 # print(w.lemmatize())
 # w = Word("went")
 # print(w.lemmatize("v"))
-
 # WordNet Integration
 # 'And now for something completely different'
 

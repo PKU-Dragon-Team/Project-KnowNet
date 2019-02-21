@@ -19,6 +19,7 @@ def init():
     })
     return NetworkXDS(config)
 
+
 nxds = init()
 
 
@@ -32,6 +33,7 @@ def insert_paper(node_key, node_struct, database_name):
         return 0
     nxds.create_node({(database_name, node_key): {}}, node_struct)
     return 1
+
 
 def insert_author(node_key, node_struct, database_name):
     # node_key is like author_XXXX
