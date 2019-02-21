@@ -30,26 +30,6 @@ class Net:
     net_type = 'none'           # 确定网络类型
     weight_type = 'none'       # 确定网络边权类型
 
-    # 以下是初次调用才会计算的属性，以减少不必要的计算，调用时请使用对应的方法
-    _connectivity = {"node": None,
-                     "edge": None}  # 网络的连通度
-    _centrality = {"degree": None,
-                   "indegree": None,
-                   "outdegree": None,
-                   "eigenvector": None,
-                   "katz": None,
-                   "pagerank": None,
-                   "betweenness": None,
-                   "closeness": None}  # 网络的节点中心度
-    _centralization = {"degree": None,
-                       "indegree": None,
-                       "outdegree": None,
-                       "eigenvector": None,
-                       "katz": None,
-                       "pagerank": None,
-                       "betweenness": None,
-                       "closeness": None}  # 网络的中心势
-
     def __init__(self, data, net_type='none', weight_type='none', from_external=True):
         """data为来自 B 数据处理模块加工过的网络或内部子网,from_external确定数据是外部还是内部"""
         def set_nxds():
@@ -81,6 +61,28 @@ class Net:
         self.density = nx.density(self.network)
         self.net_type = net_type
         self.weight_type = weight_type
+        self._init_cent()
+
+    def _init_cent(self):
+        # 以下是初次调用才会计算的属性，以减少不必要的计算，调用时请使用对应的方法
+        self._connectivity = {"node": None,
+                              "edge": None}  # 网络的连通度
+        self._centrality = {"degree": None,
+                            "indegree": None,
+                            "outdegree": None,
+                            "eigenvector": None,
+                            "katz": None,
+                            "pagerank": None,
+                            "betweenness": None,
+                            "closeness": None}  # 网络的节点中心度
+        self._centralization = {"degree": None,
+                                "indegree": None,
+                                "outdegree": None,
+                                "eigenvector": None,
+                                "katz": None,
+                                "pagerank": None,
+                                "betweenness": None,
+                                "closeness": None}  # 网络的中心势
 
     # 以下是基本属性方法
     def nodes(self, data=False):
@@ -162,18 +164,20 @@ class Net:
     #     else:
     #         raise ValueError("输入类型不正确！type请输入degree或betweenness或closeness！")
 
-    def find_nodes_by_centrality(self, c_type='degree', n=1, return_value=True):
-        """根据中心性抽取重要节点，n为抽取的节点个数
+    def find_nodes_by_centrality(self, c_type='degree', n=-1, return_value=True):
+        """根据中心性抽取重要节点，n为抽取的节点个数, -1表示获取所有值
         return_value决定返回值为节点列表还是(节点，中心度)元组列表"""
         if n > self.scale:
-            raise ValueError("n不能比网络节点数目还大！")
+            n = self.scale
         nodelist = list()  # 缓存节点列表
-        centrality = self.centrality(c_type=c_type)  # 缓存中心度词典
-        for node in centrality:  # 遍历
-            nodelist.append((node, centrality[node]))
+        cent = self.centrality(c_type=c_type)  # 缓存中心度词典
+        for node in cent:  # 遍历
+            nodelist.append((node, cent[node]))
         nodelist.sort(key=lambda x: x[1], reverse=True)  # 排序
         if not return_value:  # 去除中心度值
             nodelist = [item[0] for item in nodelist]
+        if n < 0:
+            return nodelist      # 返回所有结果
         return nodelist[:n]  # 返回前n个结果
 
     # 以下是可视化输出的方法
@@ -183,18 +187,21 @@ class Net:
             print("网络规模太大("+str(self.scale)+")，不支持可视化！请抽取更小的子网络进行可视化")
             return
         g = self.network
+        partition = community.best_partition(g)
         if layout.lower() != 'force' and layout.lower() != 'circular':
             raise ValueError("没有这种布局！布局请选择force或circular")
         # 获取节点名称映射
         names = nx.get_node_attributes(g, 'name')
-        nodes = [{'name': names[n], 'symbolSize': math.log2(nx.degree(g, n, weight=self.weight_type)+1)}
+        nodes = [{'name': names[n], 'symbolSize': math.log2(nx.degree(g, n, weight=self.weight_type)+1),
+                  'category': partition[n]}
                  for n in g.nodes()]
-        links = [{'source': names[e[0]], 'target': names[e[1]]} for e in g.edges]
+        links = [{'source': names[e[0]], 'target': names[e[1]], 'value': e[2][self.weight_type]} for e in g.edges]
         graph = Graph(self.net_type, width=1200, height=750)
         graph.add(
             "",
             nodes,
             links,
+            categories=list(set(partition.values())),
             label_pos="right",
             graph_repulsion=50,
             graph_layout=layout,
@@ -344,12 +351,12 @@ class Net:
     def extract_louvain_communities(self):
         """通过Louvain模块化算法抽取网络的社区，返回list，元素为（社区编号，社区对应的Network）"""
         partition = community.best_partition(self.network)
-        n_dict = dict()
-        for index in set(partition.values()):
+        n_list = list()
+        for index in sorted(list(set(partition.values()))):
             nodelist = [node for node in self.network.nodes() if partition[node] == index]
             n = self.extract_subgraph(nodelist)
-            n_dict[index] = Net(n, self.net_type, self.weight_type, from_external=False)
-        return n_dict
+            n_list.append(n)
+        return n_list
 
     def extract_by_attribute(self, key, key_value):
         """根据给定的属性过滤网络"""
