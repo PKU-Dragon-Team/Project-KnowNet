@@ -2,9 +2,9 @@
 import os
 from pathlib import Path
 from data_platform.config import ConfigManager
-from . import source as s
-from . import database as db
-from . import algorithm
+from network_construction import source as s
+from network_construction import database as db
+from network_construction import algorithm
 current_path = Path(os.getcwd())
 data_path = current_path / 'data'
 xml_path = data_path / 'unprocessed_articles_xml'
@@ -29,7 +29,8 @@ def node_extraction_author(source, document, database):
         node_struct['email'] = "null"
         db.insert_author(node_key, node_struct, database)
     for c in citations:
-        for value in c['bib_detail'].items():
+        for value0 in c['bib_detail'].items():
+            value = value0[1]
             if 'authors' in value.keys():
                 author_names = value['authors']
                 for each in author_names:
@@ -68,7 +69,8 @@ def node_extraction_paper(source, document, database):
         node_struct['bib_number'] = a['bib_number']
         db.insert_paper(node_key, node_struct, database)
     for c in citations:
-        for value in c['bib_detail'].items():
+        for value0 in c['bib_detail'].items():
+            value = value0[1]
             if 'doi' in value.keys():
                 docdoi = value['doi']
                 node_key = "paper_" + docdoi
@@ -156,5 +158,5 @@ def node_extraction_text(source, document, node, database):
     return 0
 
 # if __name__ == '__main__':
-# node_extraction_author("ScienceDirectDataSource","1-50","knowledge")
+# node_extraction_paper("ScienceDirectDataSource","1-10","knowledge")
 # 此模块经过验证可用，一些常见的异常已经被处理

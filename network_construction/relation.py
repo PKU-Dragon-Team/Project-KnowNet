@@ -233,7 +233,8 @@ def relation_extraction_paper(source, document, relation, database):
         for a in all_:
             node1_doc_doi = "paper_" + str(a['doc_doi'])
             node1_title = a['title']
-            for value in a['bib_detail'].items():
+            for value0 in a['bib_detail'].items():
+                value = value0[1]
                 if 'doi' in value.keys():
                     node2_doc_doi = "paper_" + value['doi']
                     relation_struct = {}
@@ -282,7 +283,8 @@ def relation_extraction_author(source, document, relation, database):
                             relation_struct['relation'] = "co"
                             db.insert_author_relation(node1, node2, relation_struct, database)
             node2_author = []
-            for value in a['bib_detail'].items():
+            for value0 in a['bib_detail'].items():
+                value = value0[1]
                 if 'authors' in value.keys():
                     author_names = value['authors']
                     for each in author_names:
