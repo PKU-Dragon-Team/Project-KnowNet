@@ -1,5 +1,6 @@
 # encoding:utf-8
 
+
 from pathlib import Path
 import os
 from data_platform.config import ConfigManager
@@ -10,7 +11,12 @@ def init():
     current_location = Path(os.getcwd())
     data_location = current_location / 'data'
     graph_location = data_location / 'graph'
-    config = ConfigManager({"init": {"location": graph_location}, 'file_format': 'graphml'})
+    config = ConfigManager({
+        "init": {
+            "location": graph_location
+        },
+        'file_format': 'graphml'
+    })
     return NetworkXDS(config)
 
 
@@ -104,6 +110,9 @@ def insert_paper_word_relation(node1_key, node2_key, relation_struct, database_n
     nxds.create_edge({(database_name, (node1_key, node2_key)): {}}, relation_struct)
 
 
+def flush():
+    nxds.flush()
+
 # if __name__ == '__main__':
-# create_database("knowledge6")
-# 可成功建立数据库
+    # create_database("knowledge6")
+    # 可成功建立数据库
