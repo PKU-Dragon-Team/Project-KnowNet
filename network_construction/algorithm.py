@@ -12,7 +12,6 @@ from textblob import Word
 # from textblob.wordnet import VERB
 # from gensim.test.utils import common_texts, get_tmpfile
 from gensim.models import word2vec
-
 # import collections
 # ssl._create_default_https_context = ssl._create_unverified_context
 # nltk.download()
@@ -25,7 +24,6 @@ class UnigramChunker(nltk.ChunkParserI):
         该分块器可以从训练句子集中找出每个词性标注最有可能的分块标记，
         然后使用这些信息进行分块
     """
-
     def __init__(self, train_sents):
         """
             构造函数
@@ -65,30 +63,25 @@ class UnigramChunker(nltk.ChunkParserI):
 # train_sents = conll2000.chunked_sents("train.txt", chunk_types=["NP"])
 # unigram_chunker = UnigramChunker(train_sents)
 # print(unigram_chunker.evaluate(test_sents))
-
 # rake-nltk
 # Uses stopwords for english from NLTK, and all puntuation characters by
 # default
 # r = Rake()
-
 # Extraction given the text.
 # r.extract_keywords_from_text("Python is a high-level, general-purpose programming language.")
 # print(r.get_ranked_phrases())
 # print(r.get_ranked_phrases_with_scores())
 # print(r.get_word_degrees())
 # print(r.get_word_frequency_distribution())
-
 # Extraction given the list of strings where each string is a sentence.
 # r.extract_keywords_from_sentences(["Uses stopwords for english from NLTK, and all puntuation
 # characters by","Uses stopwords for english from NLTK, and all puntuation characters by"])
-
 # text-blob http://textblob.readthedocs.io/en/dev/quickstart.html
 # text-blob wordnet interface http://www.nltk.org/howto/wordnet.html
 # w = Word("octopi")
 # print(w.lemmatize())
 # w = Word("went")
 # print(w.lemmatize("v"))
-
 # WordNet Integration
 # 'And now for something completely different'
 
@@ -190,8 +183,8 @@ def extract_relation_noun_co(text):
             if word not in temp:
                 temp.append(word)
         if len(temp) >= 2:
-            for i in range(0, len(temp) - 1):
-                for j in range(i + 1, len(temp)):
+            for i in range(0, len(temp)-1):
+                for j in range(i+1, len(temp)):
                     relation.append((temp[i], temp[j], "co"))
     return relation
 
@@ -206,8 +199,8 @@ def extract_relation_noun_phrase_co(text):
             if word not in temp:
                 temp.append(word)
         if len(temp) >= 2:
-            for i in range(0, len(temp) - 1):
-                for j in range(i + 1, len(temp)):
+            for i in range(0, len(temp)-1):
+                for j in range(i+1, len(temp)):
                     relation.append((temp[i], temp[j], "co"))
     return relation
 
@@ -238,8 +231,8 @@ def extract_relation_adj_co(text):
             if word not in temp:
                 temp.append(word)
         if len(temp) >= 2:
-            for i in range(0, len(temp) - 1):
-                for j in range(i + 1, len(temp)):
+            for i in range(0, len(temp)-1):
+                for j in range(i+1, len(temp)):
                     relation.append((temp[i], temp[j], "co"))
     return relation
 
@@ -254,8 +247,8 @@ def extract_relation_verb_co(text):
             if word not in temp:
                 temp.append(word)
         if len(temp) >= 2:
-            for i in range(0, len(temp) - 1):
-                for j in range(i + 1, len(temp)):
+            for i in range(0, len(temp)-1):
+                for j in range(i+1, len(temp)):
                     relation.append((temp[i], temp[j], "co"))
     return relation
 
@@ -270,8 +263,8 @@ def extract_relation_ner_co(text):
             if word not in temp:
                 temp.append(word)
         if len(temp) >= 2:
-            for i in range(0, len(temp) - 1):
-                for j in range(i + 1, len(temp)):
+            for i in range(0, len(temp)-1):
+                for j in range(i+1, len(temp)):
                     relation.append((temp[i], temp[j], "co"))
     return relation
 
@@ -284,8 +277,8 @@ def extract_relation_noun_wordnet(text):
         if word not in temp:
             temp.append(word)
     if len(temp) >= 2:
-        for i in range(0, len(temp) - 1):
-            for j in range(i + 1, len(temp)):
+        for i in range(0, len(temp)-1):
+            for j in range(i+1, len(temp)):
                 if wordnet_similarity(temp[i], temp[j]):
                     similarity = wordnet_similarity(temp[i], temp[j])
                     relation.append((temp[i], temp[j], "wordnet", similarity))
@@ -300,8 +293,8 @@ def extract_relation_adj_wordnet(text):
         if word not in temp:
             temp.append(word)
     if len(temp) >= 2:
-        for i in range(0, len(temp) - 1):
-            for j in range(i + 1, len(temp)):
+        for i in range(0, len(temp)-1):
+            for j in range(i+1, len(temp)):
                 if wordnet_similarity(temp[i], temp[j]):
                     similarity = wordnet_similarity(temp[i], temp[j])
                     relation.append((temp[i], temp[j], "wordnet", similarity))
@@ -316,8 +309,8 @@ def extract_relation_verb_wordnet(text):
         if word not in temp:
             temp.append(word)
     if len(temp) >= 2:
-        for i in range(0, len(temp) - 1):
-            for j in range(i + 1, len(temp)):
+        for i in range(0, len(temp)-1):
+            for j in range(i+1, len(temp)):
                 if wordnet_similarity(temp[i], temp[j]):
                     similarity = wordnet_similarity(temp[i], temp[j])
                     relation.append((temp[i], temp[j], "wordnet", similarity))
@@ -332,8 +325,8 @@ def extract_relation_keyword_wordnet(text):
         if word not in temp:
             temp.append(word)
     if len(temp) >= 2:
-        for i in range(0, len(temp) - 1):
-            for j in range(i + 1, len(temp)):
+        for i in range(0, len(temp)-1):
+            for j in range(i+1, len(temp)):
                 if wordnet_similarity(temp[i], temp[j]):
                     similarity = wordnet_similarity(temp[i], temp[j])
                     relation.append((temp[i], temp[j], "wordnet", similarity))
@@ -401,19 +394,17 @@ def wordnet_similarity(word1, word2):
         word2_synset = word2_synsets[0]
         return word1_synset.path_similarity(word2_synset)
     return 0
-
-
 # if __name__ == '__main__':
-# print(para2senc2words('I am very excited about the next generation of Apple products. But
-#  I am csk! So I am not afraid of you. I am very excited about the next generation of
-# Apple products. But I am csk! So I am not afraid of you.'))
-# word2vec_initialize("I am very excited about the ne
-# xt generation of Apple products. But I am csk! So I am not afraid of you.")
-# word2vec_trainmore("And now for something completely different.")
-# word2vec_trainmore("I hate Apple products.")
-# word2vec_result("I")
-# extract_word_freq("Hello world, I am csk")
-# model = word2vec.Word2Vec.load("knowledgeB.model")
-# print(model.similarity("I","Apple"))
-# print(word_stem('shops'))
-# print(word_stem('chicken'))
+    # print(para2senc2words('I am very excited about the next generation of Apple products. But
+    #  I am csk! So I am not afraid of you. I am very excited about the next generation of
+    # Apple products. But I am csk! So I am not afraid of you.'))
+    # word2vec_initialize("I am very excited about the ne
+    # xt generation of Apple products. But I am csk! So I am not afraid of you.")
+    # word2vec_trainmore("And now for something completely different.")
+    # word2vec_trainmore("I hate Apple products.")
+    # word2vec_result("I")
+    # extract_word_freq("Hello world, I am csk")
+    # model = word2vec.Word2Vec.load("knowledgeB.model")
+    # print(model.similarity("I","Apple"))
+    # print(word_stem('shops'))
+    # print(word_stem('chicken'))
