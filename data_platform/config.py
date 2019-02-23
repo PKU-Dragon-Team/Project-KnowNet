@@ -1,7 +1,11 @@
 """Utils for config management."""
 
+import json
+import os
+import platform
 from collections import OrderedDict
 from enum import Enum, auto
+from pathlib import Path
 from typing import Any, Dict, Hashable, Mapping, Sequence, Union
 
 
@@ -114,3 +118,40 @@ class ConfigManager(OrderedDict):
                 d = d[name]
             return d
         raise KeyError
+
+
+GLOBAL_CONFIG_FILENAME = "knownet.json"
+
+
+def get_global_config() -> ConfigManager:
+    global_config = ConfigManager()
+
+    current_platform = platform.system()
+    if current_platform == 'Linux':
+        site_wise = Path('/etc')
+        user = Path.home()
+    elif current_platform == 'Windows':
+        site_wise = Path(os.getenv("PROGRAMDATA", ''))
+        user = Path(os.getenv("APPDATA", ''))
+
+    site_wise_file = site_wise / GLOBAL_CONFIG_FILENAME
+    if site_wise_file.exists():
+        with site_wise_file.open() as f:
+            global_config.update(json.load(f))
+
+    user_file = user / GLOBAL_CONFIG_FILENAME
+    if user.exists():
+        with user_file.open() as f:
+            global_config.update(json.load(f))
+
+    # check local config file, from current work folder up, up to 10 level
+    p_cwd = Path.cwd()
+    for _ in range(10):
+        detect_file = p_cwd / GLOBAL_CONFIG_FILENAME
+        if detect_file.exists():
+            with detect_file.open() as f:
+                global_config.update(json.load(f))
+            break
+        p_cwd = p_cwd.parent
+
+    return global_config
