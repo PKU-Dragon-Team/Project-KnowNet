@@ -240,6 +240,7 @@ def relation_extraction_paper(source, document, relation, database):
                     relation_struct = {}
                     relation_struct['node1_title'] = node1_title
                     relation_struct['relation'] = "cite"
+                    relation_struct['cite_count'] = 1
                     if 'title' in value.keys():
                         if 'maintitle' in value['title'].keys():
                             relation_struct['node2_title'] = value['title']['maintitle']
@@ -343,6 +344,7 @@ def relation_extraction_paper_author(source, document, relation, database):
                 relation_struct = {}
                 relation_struct['relation'] = "paper_author"
                 relation_struct['order'] = i
+                relation_struct['relation_count'] = 1
                 db.insert_paper_author_relation(node1_doc_doi, node2_author, relation_struct, database)
     return 0
 
@@ -359,7 +361,7 @@ def relation_extraction_paper_word(source, document, relation, database):
                 node2_word = "word_" + word
                 relation_struct = {}
                 relation_struct['relation'] = "paper_word"
-                relation_struct['frequency'] = words[word]
+                relation_struct['relation_count'] = words[word]
                 db.insert_paper_author_relation(node1_doc_doi, node2_word, relation_struct, database)
     return 0
 
