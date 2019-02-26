@@ -6,7 +6,7 @@ import platform
 from collections import OrderedDict
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Dict, Hashable, Mapping, Sequence, Union
+from typing import Any, Dict, Hashable, Mapping, Optional, Sequence, Text, Union
 
 
 class ConfigOpType(Enum):
@@ -25,38 +25,66 @@ class ConfigManager(OrderedDict):
 
     KEY_TYPE = Union[Hashable, ConfigOpType]
 
-    def check_subtree(self, layer: Dict, condition: Dict, strict: bool = True) -> bool:
+    @classmethod
+    def _check_str_key(cls, layer: Dict, key: Text, value: Dict, strict: bool) -> bool:
+        if isinstance(key, str):
+            if cls._check_wildcard_key(layer, key, value, strict) is False:
+                return False
+
+            if key.startswith('$'):
+                return True
+        return True
+
+    @classmethod
+    def _check_wildcard_key(cls, layer: Dict, key: Text, value: Dict, strict: bool) -> bool:
+        if key.startswith('@*'):
+            for node, subtree in layer.items():
+                if not cls.check_subtree(subtree, value):
+                    if strict:
+                        raise KeyError(f'Wildcard checking {key} failed on {node}')
+                    return False
+        return True
+
+    @classmethod
+    def _check_conditions(cls, layer: Dict, key: Text, value: Dict[Text, Dict[ConfigOpType, Any]], strict: bool) -> bool:
+        conditions: Optional[Dict[ConfigOpType, Any]] = value.get('$condition')
+        if conditions:
+            for op, val in conditions.items():
+                if not cls._check_one_condition(layer[key], op, val):
+                    if strict:
+                        raise KeyError(f'Operator {op} failed on {key}.')
+                    return False
+        return True
+
+    @classmethod
+    def _handle_missing_key(cls, layer: Dict, key: Text, value: Dict, strict: bool) -> bool:
+        if key not in layer:
+            if value.get('$optional'):
+                return True
+
+            if '$default' in value:
+                layer[key] = value.get('$default')
+            else:
+                if strict:
+                    raise KeyError(f'Not optional key {key} does not exist.')
+                return False
+        return True
+
+    @classmethod
+    def check_subtree(cls, layer: Dict, condition: Dict, strict: bool = True) -> bool:
         """Check a part of inner data with a condition dict."""
         for key, value in condition.items():
-            if isinstance(key, str):
-                if key.startswith('@*'):
-                    for node, subtree in layer.items():
-                        if not self.check_subtree(subtree, value):
-                            if strict:
-                                raise KeyError(f'Wildcard checking {key} failed on {node}')
-                            return False
-                elif key.startswith('$'):
-                    continue
+            if cls._check_str_key(layer, key, value, strict) is False:
+                return False
 
-            if key not in layer:
-                if value.get('$optional'):
-                    continue
-                elif '$default' in value:
-                    layer[key] = value.get('$default')
-                else:
-                    if strict:
-                        raise KeyError(f'Not optional key {key} does not exist.')
-                    return False
+            if cls._handle_missing_key(layer, key, value, strict) is False:
+                return False
 
-            conditions: Dict[ConfigOpType, Any] = value.get('$condition')
-            if conditions:
-                for op, val in conditions.items():
-                    if not self._check_one_condition(layer[key], op, val):
-                        if strict:
-                            raise KeyError(f'Operator {op} failed on {key}.')
-                        return False
+            if cls._check_conditions(layer, key, value, strict) is False:
+                return False
 
-            if not self.check_subtree(layer[key], value):
+            # recursive check subtrees
+            if not cls.check_subtree(layer[key], value):
                 if strict:
                     raise KeyError(f'Subtree checking failed on {key}.')
                 return False
@@ -120,7 +148,7 @@ class ConfigManager(OrderedDict):
         raise KeyError
 
 
-GLOBAL_CONFIG_FILENAME = "knownet.json"
+GLOBAL_CONFIG_FILENAME = ".knownet.json"
 
 
 def get_global_config() -> ConfigManager:
@@ -128,11 +156,11 @@ def get_global_config() -> ConfigManager:
 
     current_platform = platform.system()
     if current_platform == 'Linux':
-        site_wise = Path('/etc')
-        user = Path.home()
+        site_wise = Path('/etc')  # /etc/
+        user = Path.home()  # ~/
     elif current_platform == 'Windows':
-        site_wise = Path(os.getenv("PROGRAMDATA", ''))
-        user = Path(os.getenv("APPDATA", ''))
+        site_wise = Path(os.getenv("PROGRAMDATA", ''))  # %PROGRAMDATA%
+        user = Path(os.getenv("APPDATA", ''))  # %APPDATA%
 
     site_wise_file = site_wise / GLOBAL_CONFIG_FILENAME
     if site_wise_file.exists():
