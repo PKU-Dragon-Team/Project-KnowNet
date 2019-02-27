@@ -1,12 +1,9 @@
 language: python
-matrix:
-  include:
-    - python: 3.6
-    - python: 3.7
-      dist: xenial
-      sudo: true
-install:
-  - pip install -r requirements.txt
+sudo: required
+dist: xenial
+python:
+  - "3.6"
+  - "3.7"
 script:
   - flake8 data_platform
   - pylint data_platform

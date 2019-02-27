@@ -116,3 +116,4 @@ venv.bak/
 data/
 output/
 config/
+.knownet.json
