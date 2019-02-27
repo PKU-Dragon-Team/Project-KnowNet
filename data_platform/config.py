@@ -6,7 +6,7 @@ import platform
 from collections import OrderedDict
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Dict, Hashable, Mapping, Optional, Sequence, Text, Union
+from typing import Any, Dict, Hashable, Mapping, NamedTuple, Optional, Sequence, Text, Union
 
 
 class ConfigOpType(Enum):
@@ -151,9 +151,52 @@ class ConfigManager(OrderedDict):
 GLOBAL_CONFIG_FILENAME = ".knownet.json"
 
 
-def get_global_config() -> ConfigManager:
+class ConfigFiles(NamedTuple):
+    site_wise: Path
+    user: Path
+    local: Path
+
+
+class ConfigDicts(NamedTuple):
+    site_wise: Dict
+    user: Dict
+    local: Dict
+
+
+def get_global_config(config_dicts: ConfigDicts = None) -> ConfigManager:
+    if config_dicts is None:
+        config_dicts = get_global_config_dicts(get_global_config_files())
+
     global_config = ConfigManager()
 
+    global_config.update(config_dicts.site_wise)
+    global_config.update(config_dicts.user)
+    global_config.update(config_dicts.local)
+
+    return global_config
+
+
+def get_global_config_dicts(config_files: ConfigFiles) -> ConfigDicts:
+    site_wise: Dict = {}
+    user: Dict = {}
+    local: Dict = {}
+
+    if config_files.site_wise.exists():
+        with config_files.site_wise.open() as f:
+            site_wise = json.load(f)
+
+    if config_files.user.exists():
+        with config_files.user.open() as f:
+            user = json.load(f)
+
+    if config_files.local.exists():
+        with config_files.local.open() as f:
+            local = json.load(f)
+
+    return ConfigDicts(site_wise, user, local)
+
+
+def get_global_config_files() -> ConfigFiles:
     current_platform = platform.system()
     if current_platform == 'Linux':
         site_wise = Path('/etc')  # /etc/
@@ -163,23 +206,14 @@ def get_global_config() -> ConfigManager:
         user = Path(os.getenv("APPDATA", ''))  # %APPDATA%
 
     site_wise_file = site_wise / GLOBAL_CONFIG_FILENAME
-    if site_wise_file.exists():
-        with site_wise_file.open() as f:
-            global_config.update(json.load(f))
-
     user_file = user / GLOBAL_CONFIG_FILENAME
-    if user.exists():
-        with user_file.open() as f:
-            global_config.update(json.load(f))
 
     # check local config file, from current work folder up, up to 10 level
     p_cwd = Path.cwd()
     for _ in range(10):
         detect_file = p_cwd / GLOBAL_CONFIG_FILENAME
         if detect_file.exists():
-            with detect_file.open() as f:
-                global_config.update(json.load(f))
             break
         p_cwd = p_cwd.parent
 
-    return global_config
+    return ConfigFiles(site_wise_file, user_file, detect_file)

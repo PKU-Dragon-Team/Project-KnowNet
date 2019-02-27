@@ -71,8 +71,7 @@ class SQLiteDS(RowDataSource):
             else:
                 if table_name not in self._tables:
                     raise KeyError(f'No table named {table_name}')
-                else:
-                    target_tables = [table_name]
+                target_tables = [table_name]
 
             for target_table in target_tables:
                 with self.connect() as conn:
