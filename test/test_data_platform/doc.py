@@ -10,24 +10,22 @@ root_folder = Path(os.getcwd())
 sys.path.append(str(root_folder))
 
 SAMPLE_DOC = {
-    '$pep':
+    'pep':
     8,
-    '$title':
-    'Style Guide for Python Code',
-    '$authors': ['Guido van Rossum <guido at python.org>', 'Barry Warsaw <barry at python.org>', 'Nick Coghlan <ncoghlan at gmail.com>'],
-    '$status':
+    'authors': ['Guido van Rossum <guido at python.org>', 'Barry Warsaw <barry at python.org>', 'Nick Coghlan <ncoghlan at gmail.com>'],
+    'status':
     'Active',
-    '$type':
+    'type':
     'Process',
-    '$created':
+    'created':
     '05-Jul-2001',
     'title':
     'PEP 8 -- Style Guide for Python Code',
-    '$sections':
+    'sections':
     [{
-        '$title':
+        'title':
         'Introduction',
-        '$paragraphs': [
+        'paragraphs': [
             '''This document gives coding conventions for the Python code comprising the standard library in the main Python distribution. '''
             '''Please see the companion informational PEP describing style guidelines for the C code in the C implementation of Python [1].''',
             '''his document and PEP 257 (Docstring Conventions) were adapted from Guido's original Python Style Guide essay, '''
@@ -38,9 +36,9 @@ SAMPLE_DOC = {
         ]
     },
      {
-         '$title':
+         'title':
          'A Foolish Consistency is the Hobgoblin of Little Minds',
-         '$paragraphs': [
+         'paragraphs': [
              '''One of Guido's key insights is that code is read much more often than it is written. '''
              '''The guidelines provided here are intended to improve the readability of code and make it consistent '''
              '''across the wide spectrum of Python code. As PEP 20 says, "Readability counts".''',
@@ -61,33 +59,31 @@ SAMPLE_DOC = {
 
 SAMPLE_DOC2 = {
     'title': 'PEP 484 -- Type Hints',
-    '$pep': 484,
-    '$authors': ['Guido van Rossum <guido at python.org>', 'Jukka Lehtosalo <jukka.lehtosalo at iki.fi>', 'Łukasz Langa <lukasz at python.org>'],
-    '$status': 'Provisional',
-    '$type': 'Standards Track',
-    '$created': '29-Sep-2014'
+    'pep': 484,
+    'authors': ['Guido van Rossum <guido at python.org>', 'Jukka Lehtosalo <jukka.lehtosalo at iki.fi>', 'Łukasz Langa <lukasz at python.org>'],
+    'status': 'Provisional',
+    'type': 'Standards Track',
+    'created': '29-Sep-2014'
 }
 
 
 class TestDocDataSource(BaseTestDataSource):
-    def test_create(self):
-        from data_platform.datasource.abc.doc import DocKeyPair
-
+    def test_default_create(self):
         with tempfile.TemporaryDirectory(prefix='test_', suffix='_docds') as tmpdir:
             ds = self.get_test_instance(tmpdir)
             r_value = ds.create_doc(val=SAMPLE_DOC)
+
+            self.assertEqual(r_value, [ds.DEFAULT_DOC_KEY])
             del ds
 
-            self.assertEqual(r_value, [DocKeyPair(docset_name='_default', doc_name='_default')])
-
-    def test_read(self):
+    def test_default_read(self):
         with tempfile.TemporaryDirectory(prefix='test_', suffix='_docds') as tmpdir:
             ds = self.get_test_instance(tmpdir)
             doc_key = ds.create_doc(val=SAMPLE_DOC)
             r_value = ds.read_doc()
-            del ds
 
             self.assertEqual(r_value, {doc_key[0]: SAMPLE_DOC})
+            del ds
 
     def test_named_create_and_read(self):
         from data_platform.datasource.abc.doc import DocKeyPair
@@ -96,24 +92,28 @@ class TestDocDataSource(BaseTestDataSource):
             ds = self.get_test_instance(tmpdir)
             doc_key = ds.create_doc(key={('pep', 'pep484'): {}}, val=SAMPLE_DOC2)
             r_value = ds.read_doc()
-            del ds
 
             self.assertEqual(doc_key, [DocKeyPair(docset_name='pep', doc_name='pep484')])
             self.assertEqual(r_value, {doc_key[0]: SAMPLE_DOC2})
+            del ds
 
     def test_multi_update(self):
         from data_platform.datasource.abc.doc import DocKeyPair
 
         with tempfile.TemporaryDirectory(prefix='test_', suffix='_docds') as tmpdir:
             ds = self.get_test_instance(tmpdir)
+            doc_key = ds.create_doc([('pep', 'pep001'), ('pep', 'pep051'), ('pep', 'pep511')], {'test_attr': True})
             doc_key = ds.update_doc([('pep', 'pep001'), ('pep', 'pep051'), ('pep', 'pep511')], SAMPLE_DOC2)
-            del ds
+            result = ds.read_doc(('pep', 'pep001'))
 
             self.assertCountEqual(doc_key, [
                 DocKeyPair(docset_name='pep', doc_name='pep511'),
                 DocKeyPair(docset_name='pep', doc_name='pep051'),
                 DocKeyPair(docset_name='pep', doc_name='pep001')
             ])
+            target_value = {**SAMPLE_DOC2, 'test_attr': True}
+            self.assertEqual(result, {DocKeyPair('pep', 'pep001'): target_value})
+            del ds
 
     def test_delete(self):
         from data_platform.datasource.abc.doc import DocKeyPair
@@ -174,3 +174,66 @@ class TestScienceDirectDS(TestDocDataSource):
         config = ConfigManager({"init": {"location": temp_location}})
         ds = ScienceDirectDS(config)
         return ds
+
+
+class TestMongoDBDS(TestDocDataSource):
+    def setUp(self):
+        """Optional initalizations."""
+        ds = self.get_test_instance(None)
+        ds.clear()
+
+    @classmethod
+    def get_test_class(cls):
+        from data_platform.datasource.mongodb import MongoDBDS
+        return MongoDBDS
+
+    def get_test_instance(self, temp_location):
+        from data_platform.config import ConfigManager, get_global_config
+        from data_platform.datasource.mongodb import MongoDBDS
+
+        global_conf = get_global_config()
+        uri = global_conf.check_get(['test', 'mongodb', 'uri'])
+        database = global_conf.check_get(['test', 'mongodb', 'database'])
+        config = ConfigManager({"init": {"uri": uri, 'database': database}})
+        mongodbds = MongoDBDS(config)
+        return mongodbds
+
+    def tearDown(self):
+        """Optional finalizations."""
+        ds = self.get_test_instance(None)
+        ds.clear()
+
+
+class TestArangoDBDS(TestDocDataSource):
+    def __init__(self, methodName):
+        super().__init__(methodName)
+        self._cache_ds = None
+
+    def setUp(self):
+        """Optional initalizations."""
+        ds = self.get_test_instance(None)
+        ds.clear()
+
+    @classmethod
+    def get_test_class(cls):
+        from data_platform.datasource.arangodb import ArangoDBDS
+        return ArangoDBDS
+
+    def get_test_instance(self, temp_location):
+        from data_platform.config import ConfigManager, get_global_config
+        from data_platform.datasource.arangodb import ArangoDBDS
+
+        if self._cache_ds is None:
+            global_conf = get_global_config()
+            uri = global_conf.check_get(['test', 'arangodb', 'uri'])
+            user = global_conf.check_get(['test', 'arangodb', 'user'])
+            password = global_conf.check_get(['test', 'arangodb', 'password'])
+            database = global_conf.check_get(['test', 'arangodb', 'database'])
+            config = ConfigManager({"init": {"uri": uri, 'user': user, 'password': password, 'database': database}})
+            arangodbds = ArangoDBDS(config)
+            self._cache_ds = arangodbds
+
+        return self._cache_ds
+
+    def tearDown(self):
+        """Optional finalizations."""
