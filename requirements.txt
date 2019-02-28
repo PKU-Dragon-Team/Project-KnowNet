@@ -5,11 +5,14 @@ git+https://gitlab.com/pycqa/flake8
 lxml
 matplotlib
 mypy
+neo4j
 networkx
 nltk
 numpy
+pyarango
 pyecharts
 pylint
+pymongo
 python-louvain
 rake-nltk
 textblob
