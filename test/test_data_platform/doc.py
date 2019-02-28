@@ -10,24 +10,22 @@ root_folder = Path(os.getcwd())
 sys.path.append(str(root_folder))
 
 SAMPLE_DOC = {
-    '$pep':
+    'pep':
     8,
-    '$title':
-    'Style Guide for Python Code',
-    '$authors': ['Guido van Rossum <guido at python.org>', 'Barry Warsaw <barry at python.org>', 'Nick Coghlan <ncoghlan at gmail.com>'],
-    '$status':
+    'authors': ['Guido van Rossum <guido at python.org>', 'Barry Warsaw <barry at python.org>', 'Nick Coghlan <ncoghlan at gmail.com>'],
+    'status':
     'Active',
-    '$type':
+    'type':
     'Process',
-    '$created':
+    'created':
     '05-Jul-2001',
     'title':
     'PEP 8 -- Style Guide for Python Code',
-    '$sections':
+    'sections':
     [{
-        '$title':
+        'title':
         'Introduction',
-        '$paragraphs': [
+        'paragraphs': [
             '''This document gives coding conventions for the Python code comprising the standard library in the main Python distribution. '''
             '''Please see the companion informational PEP describing style guidelines for the C code in the C implementation of Python [1].''',
             '''his document and PEP 257 (Docstring Conventions) were adapted from Guido's original Python Style Guide essay, '''
@@ -38,9 +36,9 @@ SAMPLE_DOC = {
         ]
     },
      {
-         '$title':
+         'title':
          'A Foolish Consistency is the Hobgoblin of Little Minds',
-         '$paragraphs': [
+         'paragraphs': [
              '''One of Guido's key insights is that code is read much more often than it is written. '''
              '''The guidelines provided here are intended to improve the readability of code and make it consistent '''
              '''across the wide spectrum of Python code. As PEP 20 says, "Readability counts".''',
@@ -61,16 +59,16 @@ SAMPLE_DOC = {
 
 SAMPLE_DOC2 = {
     'title': 'PEP 484 -- Type Hints',
-    '$pep': 484,
-    '$authors': ['Guido van Rossum <guido at python.org>', 'Jukka Lehtosalo <jukka.lehtosalo at iki.fi>', 'Łukasz Langa <lukasz at python.org>'],
-    '$status': 'Provisional',
-    '$type': 'Standards Track',
-    '$created': '29-Sep-2014'
+    'pep': 484,
+    'authors': ['Guido van Rossum <guido at python.org>', 'Jukka Lehtosalo <jukka.lehtosalo at iki.fi>', 'Łukasz Langa <lukasz at python.org>'],
+    'status': 'Provisional',
+    'type': 'Standards Track',
+    'created': '29-Sep-2014'
 }
 
 
 class TestDocDataSource(BaseTestDataSource):
-    def test_create(self):
+    def test_default_create(self):
         from data_platform.datasource.abc.doc import DocKeyPair
 
         with tempfile.TemporaryDirectory(prefix='test_', suffix='_docds') as tmpdir:
@@ -80,7 +78,7 @@ class TestDocDataSource(BaseTestDataSource):
 
             self.assertEqual(r_value, [DocKeyPair(docset_name='_default', doc_name='_default')])
 
-    def test_read(self):
+    def test_default_read(self):
         with tempfile.TemporaryDirectory(prefix='test_', suffix='_docds') as tmpdir:
             ds = self.get_test_instance(tmpdir)
             doc_key = ds.create_doc(val=SAMPLE_DOC)
@@ -174,3 +172,31 @@ class TestScienceDirectDS(TestDocDataSource):
         config = ConfigManager({"init": {"location": temp_location}})
         ds = ScienceDirectDS(config)
         return ds
+
+
+class TestMongoDBDS(TestDocDataSource):
+    def setUp(self):
+        """Optional initalizations."""
+        ds = self.get_test_instance(None)
+        ds.clear()
+
+    @classmethod
+    def get_test_class(cls):
+        from data_platform.datasource.mongodb import MongoDBDS
+        return MongoDBDS
+
+    def get_test_instance(self, temp_location):
+        from data_platform.config import ConfigManager, get_global_config
+        from data_platform.datasource.mongodb import MongoDBDS
+
+        global_conf = get_global_config()
+        uri = global_conf.check_get(['test', 'mongodb', 'uri'])
+        database = global_conf.check_get(['test', 'mongodb', 'database'])
+        config = ConfigManager({"init": {"uri": uri, 'database': database}})
+        mongodbds = MongoDBDS(config)
+        return mongodbds
+
+    def tearDown(self):
+        """Optional finalizations."""
+        ds = self.get_test_instance(None)
+        ds.clear()
