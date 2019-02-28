@@ -60,7 +60,7 @@ class GraphDataSource(BaseDataSource):
         pass
 
     @abstractmethod
-    def create_node(self, key: NodeKeyDict, val: NodeValDict) -> List[NodeKeyPair]:
+    def create_node(self, key: NodeKeyType, val: NodeValDict) -> List[NodeKeyPair]:
         pass
 
     @abstractmethod
