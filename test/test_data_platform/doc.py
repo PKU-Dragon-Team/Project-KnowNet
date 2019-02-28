@@ -69,23 +69,21 @@ SAMPLE_DOC2 = {
 
 class TestDocDataSource(BaseTestDataSource):
     def test_default_create(self):
-        from data_platform.datasource.abc.doc import DocKeyPair
-
         with tempfile.TemporaryDirectory(prefix='test_', suffix='_docds') as tmpdir:
             ds = self.get_test_instance(tmpdir)
             r_value = ds.create_doc(val=SAMPLE_DOC)
-            del ds
 
-            self.assertEqual(r_value, [DocKeyPair(docset_name='_default', doc_name='_default')])
+            self.assertEqual(r_value, [ds.DEFAULT_DOC_KEY])
+            del ds
 
     def test_default_read(self):
         with tempfile.TemporaryDirectory(prefix='test_', suffix='_docds') as tmpdir:
             ds = self.get_test_instance(tmpdir)
             doc_key = ds.create_doc(val=SAMPLE_DOC)
             r_value = ds.read_doc()
-            del ds
 
             self.assertEqual(r_value, {doc_key[0]: SAMPLE_DOC})
+            del ds
 
     def test_named_create_and_read(self):
         from data_platform.datasource.abc.doc import DocKeyPair
@@ -94,24 +92,28 @@ class TestDocDataSource(BaseTestDataSource):
             ds = self.get_test_instance(tmpdir)
             doc_key = ds.create_doc(key={('pep', 'pep484'): {}}, val=SAMPLE_DOC2)
             r_value = ds.read_doc()
-            del ds
 
             self.assertEqual(doc_key, [DocKeyPair(docset_name='pep', doc_name='pep484')])
             self.assertEqual(r_value, {doc_key[0]: SAMPLE_DOC2})
+            del ds
 
     def test_multi_update(self):
         from data_platform.datasource.abc.doc import DocKeyPair
 
         with tempfile.TemporaryDirectory(prefix='test_', suffix='_docds') as tmpdir:
             ds = self.get_test_instance(tmpdir)
+            doc_key = ds.create_doc([('pep', 'pep001'), ('pep', 'pep051'), ('pep', 'pep511')], {'test_attr': True})
             doc_key = ds.update_doc([('pep', 'pep001'), ('pep', 'pep051'), ('pep', 'pep511')], SAMPLE_DOC2)
-            del ds
+            result = ds.read_doc(('pep', 'pep001'))
 
             self.assertCountEqual(doc_key, [
                 DocKeyPair(docset_name='pep', doc_name='pep511'),
                 DocKeyPair(docset_name='pep', doc_name='pep051'),
                 DocKeyPair(docset_name='pep', doc_name='pep001')
             ])
+            target_value = {**SAMPLE_DOC2, 'test_attr': True}
+            self.assertEqual(result, {DocKeyPair('pep', 'pep001'): target_value})
+            del ds
 
     def test_delete(self):
         from data_platform.datasource.abc.doc import DocKeyPair
@@ -200,3 +202,38 @@ class TestMongoDBDS(TestDocDataSource):
         """Optional finalizations."""
         ds = self.get_test_instance(None)
         ds.clear()
+
+
+class TestArangoDBDS(TestDocDataSource):
+    def __init__(self, methodName):
+        super().__init__(methodName)
+        self._cache_ds = None
+
+    def setUp(self):
+        """Optional initalizations."""
+        ds = self.get_test_instance(None)
+        ds.clear()
+
+    @classmethod
+    def get_test_class(cls):
+        from data_platform.datasource.arangodb import ArangoDBDS
+        return ArangoDBDS
+
+    def get_test_instance(self, temp_location):
+        from data_platform.config import ConfigManager, get_global_config
+        from data_platform.datasource.arangodb import ArangoDBDS
+
+        if self._cache_ds is None:
+            global_conf = get_global_config()
+            uri = global_conf.check_get(['test', 'arangodb', 'uri'])
+            user = global_conf.check_get(['test', 'arangodb', 'user'])
+            password = global_conf.check_get(['test', 'arangodb', 'password'])
+            database = global_conf.check_get(['test', 'arangodb', 'database'])
+            config = ConfigManager({"init": {"uri": uri, 'user': user, 'password': password, 'database': database}})
+            arangodbds = ArangoDBDS(config)
+            self._cache_ds = arangodbds
+
+        return self._cache_ds
+
+    def tearDown(self):
+        """Optional finalizations."""

@@ -1,10 +1,19 @@
-from typing import Dict, List
+from typing import Dict, List, Any, Text
 
 from .abc.graph import (EdgeKeyPair, EdgeKeyType, EdgeNamePair, EdgeValDict, GraphDataSource, GraphKeyType, GraphNameType, GraphType, GraphValType, NodeKeyPair,
                         NodeKeyType, NodeValDict)
+from .exception import NotSupportedError
+
+try:
+    import neo4j
+except ImportError:
+    raise ImportError('This data source requires neo4j to be installed.')
 
 
 class Neo4jDS(GraphDataSource):
+    def clear(self):
+        pass
+
     def create_graph(self, key: GraphKeyType, val: GraphValType) -> List[GraphNameType]:
         pass
 
@@ -41,4 +50,7 @@ class Neo4jDS(GraphDataSource):
     def delete_edge(self, key: EdgeKeyType) -> int:
         pass
 
-    pass
+    def query(self, query: Text, *args, **kwargs) -> Any:
+        """Run query on data source."""
+        raise NotSupportedError
+

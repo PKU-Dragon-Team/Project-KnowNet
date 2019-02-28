@@ -12,8 +12,8 @@ except ImportError:
 
 
 class MongoDBDS(DocDataSource):
-    _default_doc_key = DocKeyPair('_default', '_default')
-    _wildcard_doc_key = DocKeyPair('@*', '@*')
+    DEFAULT_DOC_KEY = DocKeyPair('_default', '_default')
+    WILDCARD_DOC_KEY = DocKeyPair('@*', '@*')
 
     def __init__(self, config: ConfigManager, *args, **kwargs) -> None:
         super().__init__(config, *args, **kwargs)
@@ -22,7 +22,7 @@ class MongoDBDS(DocDataSource):
         self._database: Text = config.check_get(["init", "database"])
 
         self._client: MongoClient = MongoClient(self._uri)
-        self._db: pymongo.database.Database = self._client[self._database]
+        self._mongodb: pymongo.database.Database = self._client[self._database]
 
     def __del__(self):
         self._client.close()
@@ -38,13 +38,13 @@ class MongoDBDS(DocDataSource):
             if has_wildcard:
                 # TODO: conditions
                 if is_docset_wildcard:
-                    docsets = self._db.list_collection_names()
+                    docsets = self._mongodb.list_collection_names()
                 else:
                     docsets = [docset_name]
 
                 for ds_name in docsets:
                     if is_doc_wildcard:
-                        d_names = [d['_doc_name'] for d in self._db[ds_name].find({}, ['_doc_name'])]
+                        d_names = [d['_doc_name'] for d in self._mongodb[ds_name].find({}, ['_doc_name'])]
                         for d_name in d_names:
                             result.add(DocKeyPair(ds_name, d_name))
                     else:
@@ -55,7 +55,7 @@ class MongoDBDS(DocDataSource):
         return list(result)
 
     def clear(self):
-        self._client.drop_database(self._db)
+        self._client.drop_database(self._mongodb)
 
     def flush(self):
         pass
@@ -63,7 +63,7 @@ class MongoDBDS(DocDataSource):
     def reload(self):
         pass
 
-    def create_doc(self, key: DocKeyType = _default_doc_key, val: DocValDict = None) -> List[DocKeyPair]:
+    def create_doc(self, key: DocKeyType = DEFAULT_DOC_KEY, val: DocValDict = None) -> List[DocKeyPair]:
         if val is None:
             val = {}
 
@@ -71,7 +71,7 @@ class MongoDBDS(DocDataSource):
         target = self._filter(key)
 
         for ds, d in target:
-            collection: pymongo.collection.Collection = self._db[ds]
+            collection: pymongo.collection.Collection = self._mongodb[ds]
             val_dup = {**val}
             val_dup['_doc_name'] = d
             if collection.insert_one(val_dup).inserted_id is not None:
@@ -79,12 +79,12 @@ class MongoDBDS(DocDataSource):
 
         return result
 
-    def read_doc(self, key: DocKeyType = _wildcard_doc_key) -> Dict[DocKeyPair, DocValDict]:
+    def read_doc(self, key: DocKeyType = WILDCARD_DOC_KEY) -> Dict[DocKeyPair, DocValDict]:
         result: Dict[DocKeyPair, DocValDict] = {}
         target = self._filter(key)
 
         for ds, d in target:
-            collection: pymongo.collection.Collection = self._db[ds]
+            collection: pymongo.collection.Collection = self._mongodb[ds]
             doc = collection.find_one({'_doc_name': d})
             if doc is not None:
                 del doc['_doc_name']
@@ -93,7 +93,7 @@ class MongoDBDS(DocDataSource):
 
         return result
 
-    def update_doc(self, key: DocKeyType = _default_doc_key, val: DocValDict = None) -> List[DocKeyPair]:
+    def update_doc(self, key: DocKeyType = DEFAULT_DOC_KEY, val: DocValDict = None) -> List[DocKeyPair]:
         if val is None:
             val = {}
 
@@ -101,7 +101,7 @@ class MongoDBDS(DocDataSource):
         target = self._filter(key)
 
         for ds, d in target:
-            collection: pymongo.collection.Collection = self._db[ds]
+            collection: pymongo.collection.Collection = self._mongodb[ds]
             update_result = collection.update_one({'_doc_name': d}, {'$set': val}, upsert=True)
             is_success = update_result.modified_count > 0 or update_result.upserted_id is not None
             if is_success:
@@ -109,12 +109,12 @@ class MongoDBDS(DocDataSource):
 
         return result
 
-    def delete_doc(self, key: DocKeyType = _default_doc_key) -> int:
+    def delete_doc(self, key: DocKeyType = DEFAULT_DOC_KEY) -> int:
         result = 0
         target = self._filter(key)
 
         for ds, d in target:
-            collection: pymongo.collection.Collection = self._db[ds]
+            collection: pymongo.collection.Collection = self._mongodb[ds]
             deleted_count = collection.delete_one({'_doc_name': d}).deleted_count
             result += deleted_count
 
