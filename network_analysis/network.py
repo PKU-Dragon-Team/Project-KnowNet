@@ -61,6 +61,7 @@ class Net:
         self.density = nx.density(self.network)
         self.net_type = net_type
         self.weight_type = weight_type
+        self._community = None
         self._init_cent()
 
     def _init_cent(self):
@@ -181,27 +182,27 @@ class Net:
         return nodelist[:n]  # 返回前n个结果
 
     # 以下是可视化输出的方法
-    def draw_network(self, layout="force"):
+    def draw_network(self, layout="force", render=False):
         """将网络可视化输出"""
         if self.scale > 10000:  # 对于太大的网络，可视化意义不大且效率极低，故只对小型网络进行可视化
-            print("网络规模太大("+str(self.scale)+")，不支持可视化！请抽取更小的子网络进行可视化")
-            return
+            raise ValueError("网络规模太大("+str(self.scale)+")，不支持可视化！请抽取更小的子网络进行可视化")
         g = self.network
-        partition = community.best_partition(g)
+        if self._community is None:
+            self._community = community.best_partition(g)
         if layout.lower() != 'force' and layout.lower() != 'circular':
             raise ValueError("没有这种布局！布局请选择force或circular")
         # 获取节点名称映射
         names = nx.get_node_attributes(g, 'name')
         nodes = [{'name': names[n], 'symbolSize': math.log2(nx.degree(g, n, weight=self.weight_type)+1),
-                  'category': partition[n]}
+                  'category': self._community[n]}
                  for n in g.nodes()]
-        links = [{'source': names[e[0]], 'target': names[e[1]], 'value': e[2][self.weight_type]} for e in g.edges]
-        graph = Graph(self.net_type, width=1200, height=750)
+        links = [{'source': names[e[0]], 'target': names[e[1]], 'value': e[2][self.weight_type]} for e in g.edges(data=True)]
+        graph = Graph("", width=1200, height=750)
         graph.add(
             "",
             nodes,
             links,
-            categories=list(set(partition.values())),
+            categories=list(set(self._community.values())),
             label_pos="right",
             graph_repulsion=50,
             graph_layout=layout,
@@ -209,7 +210,9 @@ class Net:
             line_curve=0.2,
             label_text_color=None,
         )
-        graph.render(self.net_type+'.html')
+        if render:
+            graph.render(self.net_type+'.html')
+        return graph
 
     def draw_degree_distribution(self, percentage=False):
         """展示网络的度分布"""
@@ -350,10 +353,11 @@ class Net:
 
     def extract_louvain_communities(self):
         """通过Louvain模块化算法抽取网络的社区，返回list，元素为（社区编号，社区对应的Network）"""
-        partition = community.best_partition(self.network)
+        if self._community is None:
+            self._community = community.best_partition(self.network)
         n_list = list()
-        for index in sorted(list(set(partition.values()))):
-            nodelist = [node for node in self.network.nodes() if partition[node] == index]
+        for index in sorted(list(set(self._community.values()))):
+            nodelist = [node for node in self.network.nodes() if self._community[node] == index]
             n = self.extract_subgraph(nodelist)
             n_list.append(n)
         return n_list
@@ -365,13 +369,12 @@ class Net:
         # 如年份可能根据范围筛选,本例只给定筛选条件为严格等于'''
 
         filtered_nodes = list()  # 筛选出符合条件的节点
-        for node in self.network.nodes(data=True):  # 遍历节点
-            if key not in node:
+        for node in self.nodes(data=True):  # 遍历节点
+            if key not in node[1]:
                 raise ValueError("给定的属性不是网络节点的属性！")
-            if node[key] == key_value:  # 实际可能比这要更复杂
+            if node[1][key] == key_value:  # 实际可能比这要更复杂
                 filtered_nodes.append(node)
-        if filtered_nodes:
+        if not filtered_nodes:
             print("没有符合条件的节点")
             return None
-        filtered_net = nx.subgraph(self.network, filtered_nodes)  # 过滤后的网络
-        return Net(filtered_net, self.net_type, self.weight_type, from_external=False)
+        return self.extract_subgraph(filtered_nodes)  # 过滤后的网络
