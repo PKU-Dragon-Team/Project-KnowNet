@@ -20,7 +20,7 @@ def test_author_network(data):
     names = nx.get_node_attributes(n2.network, 'name')
     for item in n2.find_nodes_by_centrality(c_type='degree', n=10):
         print(names[item[0]], round(item[1], 4))
-    n1.draw_network(layout='force')
+    n1.draw_network(layout='force', render=True)
 
 
 def test_text_network(data):

@@ -10,30 +10,8 @@ from data_platform.datasource.networkx import NetworkXDS
 
 
 @route('/load')
-def analysis():
+def load():
     return template('loadgraph')
-
-
-@route('/analysis', method='get')
-@view('analysis')
-def do_analysis():
-    gname = request.query.graphname
-    gtype = request.query.graphtype
-    net_type = request.query.nettype
-    weight_type = request.query.weighttype
-    g = network.Net(gname, net_type, weight_type)
-    if gtype == 'component':
-        g = g.extract_max_component()
-    elif gtype == 'ego':
-        core = request.query.ego_core
-        radius = int(request.query.ego_radius)
-        g = g.extract_ego_network(core, radius)
-    elif gtype == 'community':
-        g = g.extract_louvain_communities()
-    data = {'graphname': gname,
-            'graphtype': gtype,
-            'g': g}
-    return data
 
 
 @route('/construction')
@@ -214,6 +192,28 @@ def do_other():
             'nettype': 'paper author or paper word network',
             'weighttype': 'relation_count'}
     print(data)
+    return data
+
+
+@route('/analysis', method='get')
+@view('analysis')
+def do_analysis():
+    gname = request.query.graphname
+    gtype = request.query.graphtype
+    net_type = request.query.nettype
+    weight_type = request.query.weighttype
+    g = network.Net(gname, net_type, weight_type)
+    if gtype == 'component':
+        g = g.extract_max_component()
+    elif gtype == 'ego':
+        core = request.query.ego_core
+        radius = int(request.query.ego_radius)
+        g = g.extract_ego_network(core, radius)
+    elif gtype == 'community':
+        g = g.extract_louvain_communities()
+    data = {'graphname': gname,
+            'graphtype': gtype,
+            'g': g}
     return data
 
 
