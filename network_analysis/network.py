@@ -9,7 +9,7 @@ import networkx as nx
 import community
 import matplotlib.pyplot as plt
 from pyecharts import Graph
-from network_analysis.linear_regression import linear_regression
+from network_analysis.algorithm import linear_regression
 
 # 以下为系统中使用
 from data_platform.config import ConfigManager
@@ -22,11 +22,11 @@ class Net:
 
     # 以下是初始化就会计算好的属性
     network = None              # 存储网络数据，格式为networkx
+    attribute: Dict[Text, Any] = {}  # 网络的固有属性，来自 B 数据处理模块
     scale = 0                   # 网络的规模，即节点数
     size = 0                    # 网络的大小，即边数
     aver_degree = 0             # 网络的度均值（忽略入度和出度的区别）
     density = 0                 # 网络的密度
-    attribute: Dict[Text, Any] = {}          # 网络的固有属性，来自 B 数据处理模块
     net_type = 'none'           # 确定网络类型
     weight_type = 'none'       # 确定网络边权类型
 
@@ -49,9 +49,9 @@ class Net:
                 self.network = nxds.read_graph(data[:-8])[data[:-8]]
             except ValueError:
                 raise ValueError("graph name is not correct!")
-            self.attribute = self.network.graph  # 还需根据data的数据结构而定
         else:
             self.network = data
+        self.attribute = self.network.graph  # 还需根据data的数据结构而定
         self.scale = self.network.number_of_nodes()
         self.size = self.network.number_of_edges()
         if self.scale:
@@ -76,14 +76,14 @@ class Net:
                             "pagerank": None,
                             "betweenness": None,
                             "closeness": None}  # 网络的节点中心度
-        self._centralization = {"degree": None,
-                                "indegree": None,
-                                "outdegree": None,
-                                "eigenvector": None,
-                                "katz": None,
-                                "pagerank": None,
-                                "betweenness": None,
-                                "closeness": None}  # 网络的中心势
+        # self._centralization = {"degree": None,
+        #                         "indegree": None,
+        #                         "outdegree": None,
+        #                         "eigenvector": None,
+        #                         "katz": None,
+        #                         "pagerank": None,
+        #                         "betweenness": None,
+        #                         "closeness": None}  # 网络的中心势
 
     # 以下是基本属性方法
     def nodes(self, data=False):
