@@ -7,23 +7,23 @@ def linear_regression(data):
     # define the number that will iteration
     # define y =mx+b
 
-    def compute_error(b, m, data):
-
-        totalError = 0
-        # Two ways to implement this
-        # first way
-        for i, _ in enumerate(data):
-            x = data[i][0]
-            y = data[i][1]
-            totalError += (y - (m * x + b)) ** 2
-
-        # second way
-        # x = data[:,0]
-        # y = data[:,1]
-        # totalError = (y-m*x-b)**2
-        # totalError = np.sum(totalError,axis=0)
-
-        return totalError / float(len(data))
+    # def compute_error(b, m, data):
+    #
+    #     totalError = 0
+    #     # Two ways to implement this
+    #     # first way
+    #     for i, _ in enumerate(data):
+    #         x = data[i][0]
+    #         y = data[i][1]
+    #         totalError += (y - (m * x + b)) ** 2
+    #
+    #     # second way
+    #     # x = data[:,0]
+    #     # y = data[:,1]
+    #     # totalError = (y-m*x-b)**2
+    #     # totalError = np.sum(totalError,axis=0)
+    #
+    #     return totalError / float(len(data))
 
     def optimizer(data, starting_b, starting_m, learning_rate, num_iter):
         b = starting_b
