@@ -195,14 +195,14 @@ class Net:
         # 获取节点名称映射
         names = nx.get_node_attributes(g, 'name')
         nodes = [{'name': names[n], 'symbolSize': (math.log2(nx.degree(g, n, weight=self.weight_type)+1))*6,
-                 'category': self._community[n],'value':nx.degree(g, n, weight=self.weight_type)}
+                 'category': self._community[n], 'value':nx.degree(g, n, weight=self.weight_type)}
                  for n in g.nodes()]
         links = [{'source': names[e[0]], 'target': names[e[1]], 'value': e[2][self.weight_type]} for e in g.edges(data=True)]
-        categories=[{'category': self._community[n],'name': self._community[n]} for n in g.nodes()]
+        categories = [{'category': self._community[n], 'name': self._community[n]} for n in g.nodes()]
         graph = (
             Graph(
                 init_opts=opts.InitOpts(
-                    width="1200px",height="1000px",
+                    width="1200px", height="1000px",
                     animation_opts=opts.AnimationOpts(
                         animation=False,
                         animation_threshold=10,
@@ -220,7 +220,7 @@ class Net:
                 label_opts=opts.LabelOpts(is_show=False),
                 )
             .set_global_opts(
-                legend_opts=opts.LegendOpts(is_show=True,orient="vertical",pos_left="2%",pos_top="10%"),
+                legend_opts=opts.LegendOpts(is_show=True, orient="vertical", pos_left="2%", pos_top="10%"),
                 )
             )
         if render:
