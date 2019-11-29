@@ -198,7 +198,7 @@ class Net:
         nodes = [{'name': names[n], 'symbolSize': (math.log2(nx.degree(g, n, weight=self.weight_type)+1))*6,
                   'category': self._community[n], 'value':nx.degree(g, n, weight=self.weight_type)}
                  for n in g.nodes()]
-        links = [{'source': names[e[0]], 'target': names[e[1]], 'value': e[2][self.weight_type]} for e in g.edges(data=True)]
+        links = [{'source': names[e[0]], 'target': names[e[1]]} for e in g.edges(data=True)]
         categories = [{'category': self._community[n], 'name': self._community[n]} for n in g.nodes()]
         graph = (
             Graph(
