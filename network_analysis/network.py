@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 # coding=utf-8
 
 import os
@@ -8,7 +9,8 @@ from typing import Any, Dict, Text
 import networkx as nx
 import community
 import matplotlib.pyplot as plt
-from pyecharts import Graph
+from pyecharts.charts import Graph
+from pyecharts import options as opts
 from network_analysis.algorithm import linear_regression
 
 # 以下为系统中使用
@@ -193,23 +195,35 @@ class Net:
             raise ValueError("没有这种布局！布局请选择force或circular")
         # 获取节点名称映射
         names = nx.get_node_attributes(g, 'name')
-        nodes = [{'name': names[n], 'symbolSize': math.log2(nx.degree(g, n, weight=self.weight_type)+1),
-                  'category': self._community[n]}
+        nodes = [{'name': names[n], 'symbolSize': (math.log2(nx.degree(g, n, weight=self.weight_type)+1))*6,
+                  'category': self._community[n], 'value':nx.degree(g, n, weight=self.weight_type)}
                  for n in g.nodes()]
-        links = [{'source': names[e[0]], 'target': names[e[1]], 'value': e[2][self.weight_type]} for e in g.edges(data=True)]
-        graph = Graph("", width=1200, height=750)
-        graph.add(
-            "",
-            nodes,
-            links,
-            categories=list(set(self._community.values())),
-            label_pos="right",
-            graph_repulsion=50,
-            graph_layout=layout,
-            is_legend_show=False,
-            line_curve=0.2,
-            label_text_color=None,
-        )
+        links = [{'source': names[e[0]], 'target': names[e[1]]} for e in g.edges(data=True)]
+        categories = [{'category': self._community[n], 'name': self._community[n]} for n in g.nodes()]
+        graph = (
+            Graph(
+                init_opts=opts.InitOpts(
+                    width="1200px", height="1000px",
+                    animation_opts=opts.AnimationOpts(
+                        animation=False,
+                        animation_threshold=10,
+                        animation_duration=1,
+                        ),
+                    )
+                )
+            .add(
+                "",
+                nodes=nodes,
+                links=links,
+                categories=categories,
+                repulsion=50,
+                linestyle_opts=opts.LineStyleOpts(curve=0.2),
+                label_opts=opts.LabelOpts(is_show=False),
+                )
+            .set_global_opts(
+                legend_opts=opts.LegendOpts(is_show=True, orient="vertical", pos_left="2%", pos_top="10%"),
+                )
+            )
         if render:
             graph.render(self.net_type+'.html')
         return graph

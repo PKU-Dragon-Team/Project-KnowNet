@@ -117,3 +117,4 @@ data/
 output/
 config/
 .knownet.json
+/.vs
