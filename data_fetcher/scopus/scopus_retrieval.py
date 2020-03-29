@@ -1,22 +1,24 @@
 # scopuus_metadata_spider.py
 
-
-from elsapy.elsclient import ElsClient
-from elsapy.elssearch import ElsSearch
+from ..dependencies.elsapy.elsclient import ElsClient
+from ..dependencies.elsapy.elssearch import ElsSearch
 import json
 import urllib.parse
 
 import os
 import collections
+import typing as tg
+
 
 class ScopusRetrieval():
     # 根据检索词query进行检索，保存一些包括doi在内的简单的元数据。
     # 更全面的元数据可以通过ScopusMetadataSpider调用Elsevier摘要API获取。
-    def __init__(self, query, 
+    def __init__(self, 
+                query, 
                 output_filename='retrieval_result.json',   # The file to store the Project-Knownet formatted metadata. 
-                num_result = -1,               # Get the first num_result results. -1 for all. No greater than 5000.  
-                config = 'config.json'
-                ):
+                num_result= -1,               # Get the first num_result results. -1 for all. No greater than 5000.  
+                config= './data_fetcher/scopus/config.json'
+                ) -> None:
         # output_filename: the file to store the metadata result. [query]_metadata.json for default. 
         
         con_file = open(config)
@@ -38,7 +40,7 @@ class ScopusRetrieval():
         # self.retrieve()
         # self.parse()
     
-    def retrieve(self):
+    def retrieve(self) -> None:
         # Start a retrival using the given query. 
         # Returns the json-formatted result. 
         els_search = ElsSearch(self.query, index='scopus')
@@ -47,7 +49,7 @@ class ScopusRetrieval():
         self.results = els_search.results       
         print('Number of results got with query', self.query, ':', len(self.results))
 
-    def parse(self):
+    def parse(self) -> None:
         # parse the results from ElsSearch to the json format we defined
         # and dump into a json file.
         output_json = []
@@ -61,7 +63,7 @@ class ScopusRetrieval():
             f.write(formatted_output_json)
     
     
-    def parse_raw(self, raw):
+    def parse_raw(self, raw) -> None:
         # the specific format translate function
         # if a key of the dict doesn't exist, return None instead of raising an error. 
         raw_dd = collections.defaultdict(int)
@@ -125,19 +127,10 @@ class ScopusRetrieval():
         
         return parsed
             
-    def get_doi_list(self):
+    def get_doi_list(self) -> tg.List:
         # 返回所有检索到的文档的doi，为接下来获取元数据做准备
         doi_list = []
         for res in self.results:
             doi = res['prism:doi']
             doi_list.append(doi)
-        return doi_list        
-            
-if __name__ == "__main__":
-    query_txt = '2019-nCoV'
-    sms = ScopusRetrieval(
-        query = query_txt,
-        num_result = -1
-    )
-    
-    
+        return doi_list

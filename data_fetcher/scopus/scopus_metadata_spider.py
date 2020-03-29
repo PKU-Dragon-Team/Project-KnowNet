@@ -1,17 +1,21 @@
 # scopus_fulltext_spider.py
 
-from elsapy.elsclient import ElsClient
-from elsapy.elssearch import ElsSearch
-from elsapy.elsdoc import FullDoc, AbsDoc
+from ..dependencies.elsapy.elsclient import ElsClient
+from ..dependencies.elsapy.elssearch import ElsSearch
+from ..dependencies.elsapy.elsdoc import FullDoc, AbsDoc
+from ..id_manager import PaperIDManager
 
 import collections
 import json
+import typing as tg
 
 class ScopusMetadataSpider(object):
     # 通过调用Elsevier的abstract API检索指定doi的元数据。
     def __init__(self, 
                  doi,
-                 config='config.json'):
+                 paper_id_manager,
+                 config='./data_fetcher/scopus/config.json',
+                 ) -> None:
         
         # 初始化这个类，传入要获取元数据的doi
         con_file = open(config)
@@ -23,20 +27,22 @@ class ScopusMetadataSpider(object):
         
         self.doi = doi
         self.doc = AbsDoc(uri = 'https://api.elsevier.com/content/abstract/doi/' + doi)
+
+        self.paper_id_manager = paper_id_manager
     
-    def execute(self):
+    def execute(self) -> tg.Dict:
         # 调用接口获取API，并解析，返回符合Project-Knownet格式的解析结果
         self.data = self.read()
         return self.parse()
     
-    def read(self):
+    def read(self) -> tg.Union[tg.Dict, None]:
         succ = self.doc.read(els_client = self._client)
         if succ:
             return self.doc._data
         else:
             return None
     
-    def parse(self):
+    def parse(self) ->tg.Dict:
         # 如果获取的是摘要，返回的json中（即self.data）有作者信息和引文信息。
         # 从结果中将这些内容解析出来，并作为返回值返回
         
@@ -89,60 +95,64 @@ class ScopusMetadataSpider(object):
             corresAuthorNormalizedName = None
             
         # 遍历每个机构，机构中的每位作者，解析其信息并作为对象添加到authors列表中
-        for affili in author_raw:
-            try:
-                nationality             = affili['affiliation']['country']
-            except Exception as e:
-                nationality             = None
+        try:
+            for affili in author_raw:
+                try:
+                    nationality             = affili['affiliation']['country']
+                except Exception as e:
+                    nationality             = None
 
-            try:
-                address                 = affili['affiliation']['ce:source-text']
-            except Exception as e:
-                address                 = None
-    
-            try:
-                if isinstance(affili['affiliation']['organization'], list):
-                    organization        = affili['affiliation']['organization'][0]['$']
-                else:
-                    organization        = affili['affiliation']['organization']['$']
-            except Exception as e:
-                organization            = None
-                
-            try:  
-                for au in affili['author']:
-                    # au的数据结构：若干个元素，每个元素对应一位作者
-                    author = {}
-                    try:
-                        author['order']             = au['@seq']
-                    except Exception as e:
-                        author['order']             = None
-                        
-                    try:
-                        author['normalizedName']    = au['preferred-name']['ce:indexed-name']
-                    except Exception as e:
-                        author['normalizedName']    = None
-                            
-                    if author['normalizedName'] == corresAuthorNormalizedName:
-                        author['isCorrespondingAuthor'] = 'true'
-                    else: 
-                        author['isCorrespondingAuthor'] = 'false'
-                
-                    try:                 
-                        author['firstName']         = au['preferred-name']['ce:given-name']
-                    except Exception as e:
-                        author['firstName']         = None
+                try:
+                    address                 = affili['affiliation']['ce:source-text']
+                except Exception as e:
+                    address                 = None
+        
+                try:
+                    if isinstance(affili['affiliation']['organization'], list):
+                        organization        = affili['affiliation']['organization'][0]['$']
+                    else:
+                        organization        = affili['affiliation']['organization']['$']
+                except Exception as e:
+                    organization            = None
                     
-                    try:
-                        author['lastName']          = au['preferred-name']['ce:surname']
-                    except Exception as e:
-                        author['lastName']          = None
+                try:  
+                    for au in affili['author']:
+                        # au的数据结构：若干个元素，每个元素对应一位作者
+                        author = {}
+                        try:
+                            author['order']             = au['@seq']
+                        except Exception as e:
+                            author['order']             = None
+                            
+                        try:
+                            author['normalizedName']    = au['preferred-name']['ce:indexed-name']
+                        except Exception as e:
+                            author['normalizedName']    = None
+                                
+                        if author['normalizedName'] == corresAuthorNormalizedName:
+                            author['isCorrespondingAuthor'] = 'true'
+                        else: 
+                            author['isCorrespondingAuthor'] = 'false'
+                    
+                        try:                 
+                            author['firstName']         = au['preferred-name']['ce:given-name']
+                        except Exception as e:
+                            author['firstName']         = None
                         
-                    author['address']           = address
-                    author['nationality']       = nationality
-                    author['organization']      = organization
-                    authors.append(author)
-            except Exception as e:
-                pass
+                        try:
+                            author['lastName']          = au['preferred-name']['ce:surname']
+                        except Exception as e:
+                            author['lastName']          = None
+                            
+                        author['address']           = address
+                        author['nationality']       = nationality
+                        author['organization']      = organization
+                        authors.append(author)
+                except Exception as e:
+                    pass
+        except Exception as e:
+            pass
+            
         # 对authors列表根据其作者位次进行排序
         authors.sort(key=lambda x: int(x['order']))
         
@@ -185,6 +195,12 @@ class ScopusMetadataSpider(object):
                     reference['title']          = ref['ref-info']['ref-title']['ref-titletext']
                 except Exception as e:
                     reference['title']          = None
+                
+                # 为解析到的每篇文章分配一个id
+                try:
+                    reference['id']             = self.paper_id_manager.get_id(reference['title'])
+                except Exception as e:
+                    reference['id']             = None 
                     
                 try:
                     reference['publication']    = ref['ref-info']['ref-sourcetitle']
@@ -249,9 +265,13 @@ class ScopusMetadataSpider(object):
                 keywords.append(kw['$'])
         except Exception as e:
             keywords = []
+            
+        # 9. 为本文分配一个id
+        id_ = self.paper_id_manager.get_id(title)
 
         # 最后返回一个dict，表示解析出的结果
         return {
+            'id': id_,
             'title': title,
             'abstract': abstract,
             'keywords': keywords,
