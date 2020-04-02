@@ -1,4 +1,4 @@
-# scopuus_metadata_spider.py
+# scopus_metadata_spider.py
 
 from ..dependencies.elsapy.elsclient import ElsClient
 from ..dependencies.elsapy.elssearch import ElsSearch
@@ -11,12 +11,12 @@ import typing as tg
 
 
 class ScopusRetrieval():
-    # 根据检索词query进行检索，保存一些包括doi在内的简单的元数据。
+    # 根据检索词query调用API进行检索，保存一些包括doi在内的简单的元数据。
     # 更全面的元数据可以通过ScopusMetadataSpider调用Elsevier摘要API获取。
     def __init__(self, 
                 query, 
-                output_filename='retrieval_result.json',   # The file to store the Project-Knownet formatted metadata. 
                 num_result= -1,               # Get the first num_result results. -1 for all. No greater than 5000.  
+                output_filename='retrieval_result.json',   # The file to store the Project-Knownet formatted metadata. 
                 config= './data_fetcher/scopus/config.json'
                 ) -> None:
         # output_filename: the file to store the metadata result. [query]_metadata.json for default. 

@@ -8,6 +8,11 @@ from network_analysis import network
 from data_platform.config import ConfigManager
 from data_platform.datasource.networkx import NetworkXDS
 
+# 下面三行是我为了解决template not found ERROR 自己添加的。 
+# 2020.1.24
+from bottle import TEMPLATE_PATH
+import os
+TEMPLATE_PATH.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "views")))
 
 @route('/load')
 def load():

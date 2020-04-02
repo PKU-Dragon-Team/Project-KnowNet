@@ -3,7 +3,7 @@
 from ..dependencies.elsapy.elsclient import ElsClient
 from ..dependencies.elsapy.elssearch import ElsSearch
 from ..dependencies.elsapy.elsdoc import FullDoc, AbsDoc
-from ..id_manager import PaperIDManager
+from ..id_manager import IDManager
 
 import collections
 import json
@@ -28,7 +28,7 @@ class ScopusMetadataSpider(object):
         self.doi = doi
         self.doc = AbsDoc(uri = 'https://api.elsevier.com/content/abstract/doi/' + doi)
 
-        self.paper_id_manager = paper_id_manager
+        self._paper_id_manager = paper_id_manager
     
     def execute(self) -> tg.Dict:
         # 调用接口获取API，并解析，返回符合Project-Knownet格式的解析结果
@@ -198,7 +198,7 @@ class ScopusMetadataSpider(object):
                 
                 # 为解析到的每篇文章分配一个id
                 try:
-                    reference['id']             = self.paper_id_manager.get_id(reference['title'])
+                    reference['id']             = self._paper_id_manager.get_id(reference['title'])
                 except Exception as e:
                     reference['id']             = None 
                     
@@ -267,7 +267,7 @@ class ScopusMetadataSpider(object):
             keywords = []
             
         # 9. 为本文分配一个id
-        id_ = self.paper_id_manager.get_id(title)
+        id_ = self._paper_id_manager.get_id(title)
 
         # 最后返回一个dict，表示解析出的结果
         return {
