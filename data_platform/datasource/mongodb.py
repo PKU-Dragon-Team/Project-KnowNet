@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List, Text, Union
 
 from ..config import ConfigManager
 from .abc.doc import DocDataSource, DocKeyPair, DocKeyType, DocValDict, DocKeyVal, DocIdPair
@@ -62,9 +62,8 @@ class MongoDBDS(DocDataSource):
                         result.add(DocKeyPair(ds_name, doc_name))
             else:
                 result.add(DocKeyPair(docset_name, doc_name))
-
         return list(result)
-    
+
     def get_db(self) -> pymongo.database.Database:
         return self._mongodb
 
@@ -133,12 +132,10 @@ class MongoDBDS(DocDataSource):
             result += deleted_count
         return result
 
-    def query(self, query: List[Text, Dict]) -> List[Dict]:
-        '''在指定collection中根据query查找符合条件的所有文档
-        query格式：(collection, {key1: value1, key2: value2, ...})'''
-        docset, query_dict = query
+    def query(self, docset, query: Dict) -> List[Dict]:
+        '''在指定collection（docset）中根据query查找符合条件的所有文档'''
         collection: pymongo.collection.Collection = self._mongodb[docset]
-        find_result = collection.find(query_dict)
+        find_result = collection.find(query)
         ret = []
         for i in find_result:
             ret.append(i)
@@ -165,7 +162,7 @@ class MongoDBDS(DocDataSource):
         ret = collection.find_one_and_update({'_id': d}, {'$inc': {'sequence_value': 1}})
         return ret['sequence_value']
 
-    def get_id(self, key: DocKeyVal) -> Any[int, None]:
+    def get_id(self, key: DocKeyVal) -> Union[int, None]:
         '''查找collection中第一个满足{key: value}的doc的_id。找不到则返回None'''
         ds, d, v = key
         collection: pymongo.collection.Collection = self._mongodb[ds]

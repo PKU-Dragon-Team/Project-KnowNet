@@ -5,6 +5,9 @@ from ..dependencies.elsapy.elsdoc import AbsDoc
 
 import json
 import typing as tg
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 class ScopusMetadataSpider(object):
@@ -81,8 +84,9 @@ class ScopusMetadataSpider(object):
         # 4. 解析作者。
         try:
             author_raw = self.data['abstracts-retrieval-response']['item']['bibrecord']['head']['author-group']
-        except Exception:
-            author_raw = None
+        except Exception as e:
+            logging.debug(str(title) + str(e))
+            author_raw = []
         # author_raw的数据结构：若干个元素，每个元素对应一个机构和从属这个机构的作者们
 
         authors = []
@@ -148,8 +152,8 @@ class ScopusMetadataSpider(object):
                         authors.append(author)
                 except Exception:
                     pass
-        except Exception:
-            pass
+        except Exception as e:
+            logging.debug(str(title) + str(e))
 
         # 对authors列表根据其作者位次进行排序
         authors.sort(key=lambda x: int(x['order']))
@@ -171,7 +175,8 @@ class ScopusMetadataSpider(object):
         # 6. 解析参考文献数量和每条的内容
         try:
             reference_raw = self.data['abstracts-retrieval-response']['item']['bibrecord']['tail']['bibliography']
-        except Exception:
+        except Exception as e:
+            logging.debug(str(title) + str(e))
             reference_raw = None
 
         references = []
@@ -245,8 +250,8 @@ class ScopusMetadataSpider(object):
                 reference['authors'] = ref_authors
                 reference['authorCount'] = len(ref_authors)
                 references.append(reference)
-        except Exception:
-            pass
+        except Exception as e:
+            logging.debug(str(title) + str(e))
 
         # 7. 解析文献类型。
         try:

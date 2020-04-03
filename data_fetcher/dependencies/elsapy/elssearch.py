@@ -81,8 +81,6 @@ class ElsSearch():
         api_response = els_client.exec_request(self._uri)
         self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
 
-        print('Number of results found: ', self.tot_num_res)
-
         self._results = api_response['search-results']['entry']
 
         if num_result < 0 or num_result > 5000:

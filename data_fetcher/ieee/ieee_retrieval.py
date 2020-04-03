@@ -79,6 +79,7 @@ class IEEERetrieval():
                 break
             time.sleep(self._interval)
         print('finished crawling metadata pages.')
+        print('and get metadata of %d papers' % len(self.retrieve_results))
 
     def parse(self) -> tg.Dict:
         '''将retrieve()获取的self.retrieve_results解析成Project-KnowNet系统格式'''
