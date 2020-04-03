@@ -9,10 +9,12 @@ from data_platform.datasource.abc.doc import DocKeyPair, DocKeyVal, DocIdPair
 class IDManager(ABC):
     """IDManager的核心任务是使用mongodb分配和管理name: Text和id: int之间的映射关系。
     这里的name可以是文献名、作者名、期刊名等。"""
-    def __init__(self,
-                config: ConfigManager,
-                key: DocKeyPair,
-                auto_inc: DocKeyPair) -> None:
+    def __init__(
+        self,
+        config: ConfigManager,
+        key: DocKeyPair,
+        auto_inc: DocKeyPair
+    ) -> None:
         '''初始化IDManager。
         参数表：
         - config: 用于初始化MongoDBDS的配置文件，详见MongoDBDS类中的定义
@@ -35,7 +37,7 @@ class IDManager(ABC):
     def get_id(self, name: Text) -> int:
         '''如果在数据库中查到了这个name对应的id（即查找条件为{key: name}），就返回id。
         如果没查到结果，为这个name分配一个新id，并加入到数据库中'''
-        key_value_pair = DocKeyVal(self._collection, self._key, name)        
+        key_value_pair = DocKeyVal(self._collection, self._key, name)
         result = self._db.get_id(key=key_value_pair)
         if result is not None:
             # 如果在数据库中查到了这个name对应的id，就返回id。
@@ -44,8 +46,8 @@ class IDManager(ABC):
         # 为这个name分配一个新id，并加入到数据库中
         nextv_doc_key_pair = DocKeyPair(self._auto_inc_docset, self._auto_inc_key)
         new_id = self._db.get_next_value(nextv_doc_key_pair)
-        self._db.insert_one(id_=new_id, docset=self._collection, 
-                        val={self._key: name})
+        self._db.insert_one(id_=new_id, docset=self._collection,
+            val={self._key: name})
         return new_id
 
     def get_name(self, id_: int) -> Text:
@@ -58,4 +60,4 @@ class IDManager(ABC):
 
     def _get_db(self):
         '''获取本IDManager对应的mongodb database。仅用于debug'''
-        return self._db._mongodb
+        return self._db.get_db()

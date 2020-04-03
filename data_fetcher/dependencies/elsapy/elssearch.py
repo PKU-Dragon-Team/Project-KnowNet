@@ -57,8 +57,8 @@ class ElsSearch():
 
     @property
     def num_res(self):
-        """Gets the number of results for this query that are stored in the 
-            search object. This number might be smaller than the number of 
+        """Gets the number of results for this query that are stored in the
+            search object. This number might be smaller than the number of
             results that exist in the index for the query."""
         return len(self.results)
 
@@ -80,11 +80,11 @@ class ElsSearch():
 
         api_response = els_client.exec_request(self._uri)
         self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
-        
+
         print('Number of results found: ', self.tot_num_res)
-        
+
         self._results = api_response['search-results']['entry']
-        
+
         if num_result < 0 or num_result > 5000:
             num_result = 5000
         while (self.num_res < num_result) and (self.num_res < self._tot_num_res):

@@ -64,6 +64,9 @@ class MongoDBDS(DocDataSource):
                 result.add(DocKeyPair(docset_name, doc_name))
 
         return list(result)
+    
+    def get_db(self) -> pymongo.database.Database:
+        return self._mongodb
 
     def clear(self):
         self._client.drop_database(self._mongodb)
@@ -130,10 +133,12 @@ class MongoDBDS(DocDataSource):
             result += deleted_count
         return result
 
-    def query(self, docset, query: Dict) -> List[Dict]:
-        '''在指定collection中根据query查找符合条件的所有文档'''
+    def query(self, query: List[Text, Dict]) -> List[Dict]:
+        '''在指定collection中根据query查找符合条件的所有文档
+        query格式：(collection, {key1: value1, key2: value2, ...})'''
+        docset, query_dict = query
         collection: pymongo.collection.Collection = self._mongodb[docset]
-        find_result = collection.find(query)
+        find_result = collection.find(query_dict)
         ret = []
         for i in find_result:
             ret.append(i)

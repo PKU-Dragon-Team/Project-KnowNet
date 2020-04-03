@@ -1,9 +1,8 @@
 # scopus_fulltext_spider.py
 
 from ..dependencies.elsapy.elsclient import ElsClient
-from ..dependencies.elsapy.elsdoc import FullDoc, AbsDoc
+from ..dependencies.elsapy.elsdoc import AbsDoc
 
-import collections
 import json
 import typing as tg
 
@@ -42,7 +41,7 @@ class ScopusMetadataSpider(object):
         else:
             return None
 
-    def parse(self) ->tg.Dict:
+    def parse(self) -> tg.Dict:
         # 如果获取的是摘要，返回的json中（即self.data）有作者信息和引文信息。
         # 从结果中将这些内容解析出来，并作为返回值返回
 
@@ -130,7 +129,7 @@ class ScopusMetadataSpider(object):
 
                         if author['normalizedName'] == corresAuthorNormalizedName:
                             author['isCorrespondingAuthor'] = 'true'
-                        else: 
+                        else:
                             author['isCorrespondingAuthor'] = 'false'
 
                         try:
@@ -157,7 +156,7 @@ class ScopusMetadataSpider(object):
 
         # 通过不同的normalizedName和order统计作者数量。考虑到共同一作或重名的情况，只要name和order有一个不同就算两位不同的作者。
         try:
-            au_list =  [au['normalizedName'] + au['order'] for au in authors]
+            au_list = [au['normalizedName'] + au['order'] for au in authors]
             au_set = list(set(au_list))
             author_count = len(au_set)
         except Exception:
@@ -198,7 +197,7 @@ class ScopusMetadataSpider(object):
                 try:
                     reference['id'] = self._paper_id_manager.get_id(reference['title'])
                 except Exception:
-                    reference['id'] = None 
+                    reference['id'] = None
 
                 try:
                     reference['publication'] = ref['ref-info']['ref-sourcetitle']

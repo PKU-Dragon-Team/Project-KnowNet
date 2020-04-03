@@ -5,14 +5,16 @@ import json
 import time
 import requests
 
+
 class IEEERetrieval():
     # 根据检索词进行检索并解析元数据
     # 实现方式是模拟用户向ieeexplore发出检索请求，而不是调用API
-    def __init__(self,
+    def __init__(
+        self,
         query,
         paper_id_manager,
         offset=0,             # 偏移量。即从第几个开始获取
-        num_result=-1,        # 获取多少元数据。-1表示所有的。  
+        num_result=-1,        # 获取多少元数据。-1表示所有的。
         request_interval=5    # 两次请求之间的时间间隔
     ) -> None:
 
@@ -25,13 +27,13 @@ class IEEERetrieval():
     def retrieve(self) -> None:
         '''发送检索请求，将请求响应（解析前的json文件）以dict格式
         记录在self.retrieve_results'''
-        start_page = math.floor(self._offset / 100) # 检索结果中每页有100篇文献
+        start_page = math.floor(self._offset / 100)     # 检索结果中每页有100篇文献
         if self._num_result == -1:
             end_page = 10000000000
         else:
             end_page = math.ceil((self._offset + self._num_result) / 100)
 
-        self.retrieve_results =  []
+        self.retrieve_results = []
 
         post_url = "https://ieeexplore.ieee.org/rest/search/"
         data = {
@@ -89,7 +91,7 @@ class IEEERetrieval():
                 ('title', 'articleTitle'),
                 ('abstract', 'abstract'),
                 ('publication', 'publicationTitle'),
-                ('year', 'publicationYear'), 
+                ('year', 'publicationYear'),
                 ('volume', 'volume'),
                 ('issue', 'issue'),
                 ('doi', 'doi'),
@@ -124,7 +126,7 @@ class IEEERetrieval():
 
             # 3. 取作者中对应字段
             try:
-                authors_origin = result['authors'] 
+                authors_origin = result['authors']
                 parsed_result['authors'] = []
                 author_keys_map = [
                     ('normalizedName', 'normalizedName'),
@@ -152,7 +154,7 @@ class IEEERetrieval():
             self.parsed_results.append(parsed_result)
 
         # 只要解析并返回用户需要的从offset开始的前num_result个结果就好了。
-        self.parsed_results = self.parsed_results[self._offset%100:]
+        self.parsed_results = self.parsed_results[self._offset % 100:]
         if self._num_result > 0:
             self.parsed_results = self.parsed_results[: self._num_result]
         return self.parsed_results

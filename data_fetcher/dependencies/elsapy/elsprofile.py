@@ -56,7 +56,7 @@ class ElsProfile(ElsEntity, metaclass=ABCMeta):
                     else:
                         data = api_response[payloadType]
                     self._doc_list = self._doc_list + [x for x in data["documents"]["abstract-document"]]
-                except  (requests.HTTPError, requests.RequestException) as e:
+                except (requests.HTTPError, requests.RequestException) as e:
                     if hasattr(self, 'doc_list'):       # We don't want incomplete doc lists
                         self._doc_list = None
                     raise e
@@ -90,7 +90,7 @@ class ElsProfile(ElsEntity, metaclass=ABCMeta):
 
 class ElsAuthor(ElsProfile):
     """An author of a document in Scopus. Initialize with URI or author ID."""
-    
+
     # static variables
     __payload_type = u'author-retrieval-response'
     __uri_base = u'https://api.elsevier.com/content/author/author_id/'
@@ -183,7 +183,7 @@ class ElsAffil(ElsProfile):
     @property
     def name(self):
         """Gets the affiliation's name"""
-        return self.data["affiliation-name"];     
+        return self.data["affiliation-name"]
 
     # modifier functions
     def read(self, els_client=None):

@@ -13,11 +13,11 @@ class ScopusRetrieval():
     # 根据检索词query调用API进行检索，保存一些包括doi在内的简单的元数据。
     # 更全面的元数据可以通过ScopusMetadataSpider调用Elsevier摘要API获取。
     def __init__(
-        self, 
-        query, 
-        num_result= -1,                             # Get the first num_result results. -1 for all. No greater than 5000.
+        self,
+        query,
+        num_result=-1,                             # Get the first num_result results. -1 for all. No greater than 5000.
         output_filename='retrieval_result.json',    # The file to store the Project-Knownet formatted metadata.
-        config= './data_fetcher/scopus/config.json'
+        config='./data_fetcher/scopus/config.json'
     ) -> None:
         # output_filename: the file to store the metadata result. [query]_metadata.json for default.
 
@@ -32,7 +32,7 @@ class ScopusRetrieval():
         self.num_result = num_result
 
         self.output_filename = output_filename
-        
+
         self._client = ElsClient(config['apikey'])
         self._client.inst_token = config['insttoken']
 
@@ -41,12 +41,12 @@ class ScopusRetrieval():
         # self.parse()
 
     def retrieve(self) -> None:
-        # Start a retrival using the given query. 
-        # Returns the json-formatted result. 
+        # Start a retrival using the given query.
+        # Record the json-formatted result in self.results.
         els_search = ElsSearch(self.query, index='scopus')
         els_search.execute(self._client, num_result=self.num_result)
         self._total_num_res = els_search.tot_num_res
-        self.results = els_search.results       
+        self.results = els_search.results
         print('Number of results got with query', self.query, ':', len(self.results))
 
     def parse(self) -> None:
@@ -80,7 +80,7 @@ class ScopusRetrieval():
             'publication': raw_dd['prism:publicationName'],
             'volume': raw_dd['prism:volume'],
             'issue': raw_dd['prism:issue'],
-            'doi': raw_dd['prism:doi'], 
+            'doi': raw_dd['prism:doi'],
             'uri': None,
             'authorCount': 0,
             'authors': []

@@ -4,7 +4,8 @@
     * https://dev.elsevier.com
     * https://api.elsevier.com"""
 
-import time, logging
+import time
+import logging
 try:
     from pathlib import Path
 except ImportError:

@@ -106,17 +106,17 @@ class ElsClient:
 
         # Construct and execute request
         headers = {
-            "X-ELS-APIKey"  : self.api_key,
-            "User-Agent"    : self.__user_agent,
-            "Accept"        : self.headers_accept
+            "X-ELS-APIKey": self.api_key,
+            "User-Agent": self.__user_agent,
+            "Accept": self.headers_accept
             }
         if self.inst_token:
             headers["X-ELS-Insttoken"] = self.inst_token
         logger.info('Sending GET request to ' + URL)
         r = requests.get(
             URL,
-            headers = headers
-            )
+            headers=headers
+        )
         self.__ts_last_req = time.time()
         self._status_code = r.status_code
         if r.status_code == 200:
@@ -126,5 +126,5 @@ class ElsClient:
             else:
                 return r.text
         else:
-            self._status_msg="HTTP " + str(r.status_code) + " Error from " + URL + " and using headers " + str(headers) + ": " + r.text
+            self._status_msg = "HTTP " + str(r.status_code) + " Error from " + URL + " and using headers " + str(headers) + ": " + r.text
             raise requests.HTTPError("HTTP " + str(r.status_code) + " Error from " + URL + "\nand using headers " + str(headers) + ":\n" + r.text)

@@ -20,5 +20,5 @@ class BaseDataSource(ABC):
         return self._config
 
     @abstractmethod
-    def query(self, query: Text, *args, **kwargs) -> Any:
+    def query(self, query: Any, *args, **kwargs) -> Any:
         """Run query on data source."""
