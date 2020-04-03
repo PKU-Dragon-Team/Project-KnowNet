@@ -105,6 +105,7 @@ ieee_metadata = ieee_retrieval.parse()
 由于Elsevier的API中检索和获取元数据是两个不同的接口，因此定义了`ScopusRetrieval`和`ScopusMetadataSpider`两个类。
 
 ### 教程
+**请在校园网环境等已订阅的条件下访问，不然可能无法获取作者、参考文献等字段！**
 您需要在`https://dev.elsevier.com/`上获取一个API key。随后创建一个如下所示的`config.json`文件（推荐存储在`./data_fetcher/scopus/config.json`）：
 ```json
 // config.json

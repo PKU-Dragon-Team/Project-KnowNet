@@ -18,3 +18,7 @@ class BaseDataSource(ABC):
     def config(self) -> ConfigManager:
         """Get the current config manager."""
         return self._config
+
+    @abstractmethod
+    def query(self, query: Any, *args, **kwargs) -> Any:
+        pass

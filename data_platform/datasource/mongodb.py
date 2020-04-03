@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Text, Union
+from typing import Dict, List, Text, Union
 
 from ..config import ConfigManager
 from .abc.doc import DocDataSource, DocKeyPair, DocKeyType, DocValDict, DocKeyVal, DocIdPair
@@ -132,10 +132,17 @@ class MongoDBDS(DocDataSource):
             result += deleted_count
         return result
 
-    def query(self, docset, query: Dict) -> List[Dict]:
-        '''在指定collection（docset）中根据query查找符合条件的所有文档'''
-        collection: pymongo.collection.Collection = self._mongodb[docset]
-        find_result = collection.find(query)
+    def query(self, query: str, *args, **kwargs) -> List[Dict]:
+        '''在指定collection中根据query查找符合条件的所有文档
+        如：m.query(query="my_collection", {'key': 'value'})
+        参数表：
+         - query: 要检索的collection名
+         - args[0]: Dict格式的检索式'''
+        if len(args) == 0 or not isinstance(args[0], dict):
+            raise TypeError("You must input a dict as query in mongodb.")
+
+        collection: pymongo.collection.Collection = self._mongodb[query]
+        find_result = collection.find(args[0])
         ret = []
         for i in find_result:
             ret.append(i)
