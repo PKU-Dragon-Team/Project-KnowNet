@@ -7,9 +7,23 @@ from ...document import Document, DocumentSet
 
 
 # Type Definitions for Doc
+# (Collection/Table, doc)
 class DocKeyPair(NamedTuple):
     docset_name: Text
     doc_name: Text
+
+
+# (Colletcion/Table, Key, Value)
+class DocKeyVal(NamedTuple):
+    docset_name: Text
+    doc_key: Text
+    doc_value: Any
+
+
+# (Collection/Table, id)
+class DocIdPair(NamedTuple):
+    docset_name: Text
+    id_: Any
 
 
 DocKeyList = List[DocKeyPair]
