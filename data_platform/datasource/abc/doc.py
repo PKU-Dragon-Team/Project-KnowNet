@@ -11,12 +11,14 @@ from ...document import Document, DocumentSet
 class DocKeyPair(NamedTuple):
     docset_name: Text
     doc_name: Text
-    
+
+
 # (Colletcion/Table, Key, Value)
 class DocKeyVal(NamedTuple):
     docset_name: Text
     doc_key: Text
     doc_value: Any
+
 
 # (Collection/Table, id)
 class DocIdPair(NamedTuple):

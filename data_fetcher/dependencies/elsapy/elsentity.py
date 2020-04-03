@@ -4,11 +4,14 @@
     * https://dev.elsevier.com
     * https://api.elsevier.com"""
 
-import requests, json, urllib
+import requests
+import json
+import urllib
 from abc import ABCMeta, abstractmethod
 from . import log_util
 
 logger = log_util.get_logger(__name__)
+
 
 class ElsEntity(metaclass=ABCMeta):
     """An abstract class representing an entity in Elsevier's data model"""
@@ -31,12 +34,12 @@ class ElsEntity(metaclass=ABCMeta):
     def uri(self, uri):
         """Set the URI of the entity instance"""
         self._uri = uri
-    
+
     @property
     def id(self):
         """Get the dc:identifier of the entity instance"""
         return self.data["coredata"]["dc:identifier"]
-    
+
     @property
     def int_id(self):
         """Get the (non-URI, numbers only) ID of the entity instance"""
@@ -64,7 +67,7 @@ class ElsEntity(metaclass=ABCMeta):
         """Fetches the latest data for this entity from api.elsevier.com.
             Returns True if successful; else, False."""
         if elsClient:
-            self._client = elsClient;
+            self._client = elsClient
         elif not self.client:
             raise ValueError('''Entity object not currently bound to elsClient instance. Call .read() with elsClient argument or set .client attribute.''')
         try:
@@ -77,7 +80,7 @@ class ElsEntity(metaclass=ABCMeta):
             else:
                 self._data = api_response[payloadType]
             '''
-            ## TODO: check if URI is the same, if necessary update and log warning.
+            # TODO: check if URI is the same, if necessary update and log warning.
             logger.info("Data loaded for " + self.uri)
             return True
         except (requests.HTTPError, requests.RequestException) as e:

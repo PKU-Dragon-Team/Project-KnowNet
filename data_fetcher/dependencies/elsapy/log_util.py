@@ -10,7 +10,8 @@ try:
 except ImportError:
     from pathlib2 import Path
 
-## Following adapted from https://docs.python.org/3/howto/logging-cookbook.html
+# Following adapted from https://docs.python.org/3/howto/logging-cookbook.html
+
 
 def get_logger(name):
     # create logger with module name

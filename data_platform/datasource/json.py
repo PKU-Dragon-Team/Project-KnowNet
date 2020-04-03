@@ -60,9 +60,9 @@ class JSONDS(DocDataSource):
             with json_file.open('r') as f:
                 try:
                     self._data[json_file.stem] = json.load(f)
-                except json.decoder.JSONDecodeError as e:
-                    self._data[json_file.stem] = {}  # exception when f is an empty file. 
-                
+                except json.decoder.JSONDecodeError:
+                    self._data[json_file.stem] = {}  # exception when f is an empty file.
+
     def _filter(self, key: DocKeyType) -> List[DocKeyPair]:
         ds_d_c = self._format_doc_key(key)
 

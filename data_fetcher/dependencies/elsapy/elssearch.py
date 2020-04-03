@@ -8,6 +8,7 @@ from . import log_util
 
 logger = log_util.get_logger(__name__)
 
+
 class ElsSearch():
     """Represents a search to one of the search indexes accessible
          through api.elsevier.com. Returns True if successful; else, False."""
@@ -66,16 +67,16 @@ class ElsSearch():
         """Gets the request uri for the search"""
         return self._uri
 
-    def execute(self, els_client = None, num_result = -1):
-        """Executes the search. If num_result = -1 (default), 
-            multiple API calls will be made to iteratively get 
+    def execute(self, els_client=None, num_result=-1):
+        """Executes the search. If num_result = -1 (default),
+            multiple API calls will be made to iteratively get
             all results for the search.
-            or the API is called iteratively until self.num_res 
+            or the API is called iteratively until self.num_res
             exceeds num_result or all results are got.
             The maximum of num_result is 5000.
             """
 
-        ## TODO: add exception handling
+        # TODO: add exception handling
 
         api_response = els_client.exec_request(self._uri)
         self._tot_num_res = int(api_response['search-results']['opensearch:totalResults'])
@@ -84,15 +85,15 @@ class ElsSearch():
         
         self._results = api_response['search-results']['entry']
         
-        if num_result < 0 or num_result > 5000 :
+        if num_result < 0 or num_result > 5000:
             num_result = 5000
         while (self.num_res < num_result) and (self.num_res < self._tot_num_res):
-            print('Requesting: %d / %d' % (self.num_res, min(num_result, self._tot_num_res)) )
+            print('Requesting: %d / %d' % (self.num_res, min(num_result, self._tot_num_res)))
             for e in api_response['search-results']['link']:
                 if e['@ref'] == 'next':
                     next_url = e['@href']
             api_response = els_client.exec_request(next_url)
-            self._results += api_response['search-results']['entry']         
+            self._results += api_response['search-results']['entry']
 
     def hasAllResults(self):
         """Returns true if the search object has retrieved all results for the

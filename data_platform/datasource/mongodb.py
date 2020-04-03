@@ -1,8 +1,7 @@
-from typing import List, Dict, List, Any, Text
+from typing import Any, Dict, List, Text
 
 from ..config import ConfigManager
 from .abc.doc import DocDataSource, DocKeyPair, DocKeyType, DocValDict, DocKeyVal, DocIdPair
-from .exception import NotSupportedError
 
 try:
     import pymongo
@@ -129,9 +128,8 @@ class MongoDBDS(DocDataSource):
             collection: pymongo.collection.Collection = self._mongodb[ds]
             deleted_count = collection.delete_one({'_doc_name': d}).deleted_count
             result += deleted_count
-
         return result
-    
+
     def query(self, docset, query: Dict) -> List[Dict]:
         '''在指定collection中根据query查找符合条件的所有文档'''
         collection: pymongo.collection.Collection = self._mongodb[docset]
@@ -140,7 +138,7 @@ class MongoDBDS(DocDataSource):
         for i in find_result:
             ret.append(i)
         return ret
-    
+
     def set_auto_increasement(self, key: DocKeyVal) -> None:
         '''在指定collection中，将一个指定key设置为自增变量。
         该自增变量的初始值为int(value)。
@@ -150,10 +148,9 @@ class MongoDBDS(DocDataSource):
         ds, d, init_v = key
         collection: pymongo.collection.Collection = self._mongodb[ds]
         try:
-            doc = collection.insert_one({'_id': d, 'sequence_value': int(init_v)})
-        except pymongo.errors.DuplicateKeyError as e:
+            collection.insert_one({'_id': d, 'sequence_value': int(init_v)})
+        except pymongo.errors.DuplicateKeyError:
             print('auto increasement value', d, 'already set.')
-            pass
 
     def get_next_value(self, key: DocKeyPair) -> int:
         '''从指定的collection和key中获取一个自增变量的值并将其+1。
@@ -163,7 +160,7 @@ class MongoDBDS(DocDataSource):
         ret = collection.find_one_and_update({'_id': d}, {'$inc': {'sequence_value': 1}})
         return ret['sequence_value']
 
-    def get_id(self, key: DocKeyVal) -> int:
+    def get_id(self, key: DocKeyVal) -> Any[int, None]:
         '''查找collection中第一个满足{key: value}的doc的_id。找不到则返回None'''
         ds, d, v = key
         collection: pymongo.collection.Collection = self._mongodb[ds]
@@ -171,14 +168,14 @@ class MongoDBDS(DocDataSource):
         if isinstance(ret, dict):
             return ret['_id']
         return None
-    
+
     def get_doc_by_id(self, key: DocIdPair) -> dict:
         '''查找docset中指定_id的doc'''
         ds, id_ = key
         collection: pymongo.collection.Collection = self._mongodb[ds]
         ret = collection.find_one({'_id': id_})
         return ret
-    
+
     def insert_one(self, id_, docset: Text, val: DocValDict) -> int:
         '''在名为docset的collection中插入val文件，并将其_id设为id_。
         返回插入doc的_id'''
@@ -187,7 +184,7 @@ class MongoDBDS(DocDataSource):
         val_dup['_id'] = id_
         ret = collection.insert_one(val_dup).inserted_id
         return ret
-    
+
     def delete_collections(self, docsets: List[Text]) -> None:
         '''---删除数据库中指定的collection---'''
         collection_names = self._mongodb.list_collection_names()
