@@ -7,9 +7,23 @@ from ...document import Document, DocumentSet
 
 
 # Type Definitions for Doc
+# (Collection/Table, doc)
 class DocKeyPair(NamedTuple):
     docset_name: Text
     doc_name: Text
+
+
+# (Colletcion/Table, Key, Value)
+class DocKeyVal(NamedTuple):
+    docset_name: Text
+    doc_key: Text
+    doc_value: Any
+
+
+# (Collection/Table, id)
+class DocIdPair(NamedTuple):
+    docset_name: Text
+    id_: Any
 
 
 DocKeyList = List[DocKeyPair]
@@ -32,6 +46,8 @@ class DocFactory(ABC):
 
 class DocDataSource(BaseDataSource):
     """Interface of doc-based data sources."""
+    DEFAULT_DOC_KEY = DocKeyPair('_default', '_default')
+    WILDCARD_DOC_KEY = DocKeyPair('@*', '@*')
 
     def __init__(self, config: ConfigManager, *args, **kwargs) -> None:
         super().__init__(config, *args, **kwargs)

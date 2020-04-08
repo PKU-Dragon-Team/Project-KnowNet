@@ -87,6 +87,16 @@ class UnigramChunker(nltk.ChunkParserI):
 
 
 def extract_keyword(text):
+    sentences = splitSentence(text)
+    result = []
+    for sentence in sentences:
+        r = Rake()
+        r.extract_keywords_from_text(sentence)
+        result += list(r.get_word_degrees().keys())
+    return result
+
+
+def extract_keyword2(text):
     r = Rake()
     r.extract_keywords_from_text(text)
     result = list(r.get_word_degrees().keys())
@@ -99,6 +109,18 @@ def extract_word(text):
 
 
 def extract_noun(text):
+    sentences = splitSentence(text)
+    noun = []
+    for sentence in sentences:
+        words = nltk.word_tokenize(sentence)
+        word_tag = nltk.pos_tag(words)
+        for word in word_tag:
+            if word[1] == "NN" or word[1] == "NNP":
+                noun.append(word[0])
+    return noun
+
+
+def extract_noun2(text):
     words = nltk.word_tokenize(text)
     word_tag = nltk.pos_tag(words)
     noun = []
@@ -115,6 +137,18 @@ def extract_word_freq(text):
 
 
 def extract_adj(text):
+    sentences = splitSentence(text)
+    adj = []
+    for sentence in sentences:
+        words = nltk.word_tokenize(sentence)
+        word_tag = nltk.pos_tag(words)
+        for word in word_tag:
+            if word[1] == "JJ":
+                adj.append(word[0])
+    return adj
+
+
+def extract_adj2(text):
     words = nltk.word_tokenize(text)
     word_tag = nltk.pos_tag(words)
     adj = []
@@ -125,6 +159,18 @@ def extract_adj(text):
 
 
 def extract_verb(text):
+    sentences = splitSentence(text)
+    verb = []
+    for sentence in sentences:
+        words = nltk.word_tokenize(sentence)
+        word_tag = nltk.pos_tag(words)
+        for word in word_tag:
+            if word[1] == "VB":
+                verb.append(word[0])
+    return verb
+
+
+def extract_verb2(text):
     words = nltk.word_tokenize(text)
     word_tag = nltk.pos_tag(words)
     verb = []
@@ -135,11 +181,36 @@ def extract_verb(text):
 
 
 def extract_noun_phrase(text):
+    sentences = splitSentence(text)
+    noun_phrases = []
+    for sentence in sentences:
+        nounphrase_tb = TextBlob(sentence)
+        noun_phrases += nounphrase_tb.noun_phrases
+    return noun_phrases
+
+
+def extract_noun_phrase2(text):
     nounphrase_tb = TextBlob(text)
     return nounphrase_tb.noun_phrases
 
 
 def extract_ner(text):
+    sentences = splitSentence(text)
+    # tokens = nltk.word_tokenize('I am very excited about the next generation of Apple products.')
+    # tokens = nltk.pos_tag(tokens)
+    # tree = nltk.ne_chunk(tokens)
+    # print(tree)
+    ner = []
+    for sentence in sentences:
+        words = nltk.word_tokenize(sentence)
+        word_tag = nltk.pos_tag(words)
+        for word in word_tag:
+            if word[1] == "NNP":
+                ner.append(word[0])
+    return ner
+
+
+def extract_ner2(text):
     # tokens = nltk.word_tokenize('I am very excited about the next generation of Apple products.')
     # tokens = nltk.pos_tag(tokens)
     # tree = nltk.ne_chunk(tokens)
@@ -177,7 +248,7 @@ def extract_relation_noun_co(text):
     sentences = splitSentence(text)
     relation = []
     for sentence in sentences:
-        words = extract_noun(sentence)
+        words = extract_noun2(sentence)
         temp = []
         for word in words:
             if word not in temp:
@@ -193,7 +264,7 @@ def extract_relation_noun_phrase_co(text):
     sentences = splitSentence(text)
     relation = []
     for sentence in sentences:
-        words = extract_noun_phrase(sentence)
+        words = extract_noun_phrase2(sentence)
         temp = []
         for word in words:
             if word not in temp:
@@ -209,7 +280,7 @@ def extract_relation_keyword_co(text):
     sentences = splitSentence(text)
     relation = []
     for sentence in sentences:
-        words = extract_keyword(sentence)
+        words = extract_keyword2(sentence)
         temp = []
         for word in words:
             if word not in temp:
@@ -225,7 +296,7 @@ def extract_relation_adj_co(text):
     sentences = splitSentence(text)
     relation = []
     for sentence in sentences:
-        words = extract_adj(sentence)
+        words = extract_adj2(sentence)
         temp = []
         for word in words:
             if word not in temp:
@@ -241,7 +312,7 @@ def extract_relation_verb_co(text):
     sentences = splitSentence(text)
     relation = []
     for sentence in sentences:
-        words = extract_verb(sentence)
+        words = extract_verb2(sentence)
         temp = []
         for word in words:
             if word not in temp:
@@ -257,7 +328,7 @@ def extract_relation_ner_co(text):
     sentences = splitSentence(text)
     relation = []
     for sentence in sentences:
-        words = extract_ner(sentence)
+        words = extract_ner2(sentence)
         temp = []
         for word in words:
             if word not in temp:

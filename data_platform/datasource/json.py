@@ -15,8 +15,8 @@ class JSONDS(DocDataSource):
     support multi-docsets (specify "docset_id" in key)
     """
 
-    _default_doc_key = DocKeyPair('_default', '_default')
-    _wildcard_doc_key = DocKeyPair('@*', '@*')
+    DEFAULT_DOC_KEY = DocKeyPair('_default', '_default')
+    WILDCARD_DOC_KEY = DocKeyPair('@*', '@*')
 
     def __init__(self, config: ConfigManager, *args, **kwargs) -> None:
         super().__init__(config, *args, **kwargs)
@@ -58,7 +58,10 @@ class JSONDS(DocDataSource):
 
         for json_file in self._loc.glob('*.json'):  # type: Path
             with json_file.open('r') as f:
-                self._data[json_file.stem] = json.load(f)
+                try:
+                    self._data[json_file.stem] = json.load(f)
+                except json.decoder.JSONDecodeError:
+                    self._data[json_file.stem] = {}  # exception when f is an empty file.
 
     def _filter(self, key: DocKeyType) -> List[DocKeyPair]:
         ds_d_c = self._format_doc_key(key)
@@ -106,7 +109,7 @@ class JSONDS(DocDataSource):
     def query(self, query: str, *args, **kwargs) -> NoReturn:
         raise NotSupportedError("JSON data source has no query method.")
 
-    def create_doc(self, key: DocKeyType = _default_doc_key, val: Optional[DocValDict] = None) -> List[DocKeyPair]:
+    def create_doc(self, key: DocKeyType = DEFAULT_DOC_KEY, val: Optional[DocValDict] = None) -> List[DocKeyPair]:
         """Create doc in data source."""
         if val is None:
             val = {}
@@ -123,7 +126,7 @@ class JSONDS(DocDataSource):
 
         return result
 
-    def read_doc(self, key: DocKeyType = _wildcard_doc_key) -> Dict[DocKeyPair, DocValDict]:
+    def read_doc(self, key: DocKeyType = WILDCARD_DOC_KEY) -> Dict[DocKeyPair, DocValDict]:
         target = self._filter(key)
         result: Dict[DocKeyPair, DocValDict] = {}
         for ds, d in target:
@@ -132,7 +135,7 @@ class JSONDS(DocDataSource):
                     result[DocKeyPair(ds, d)] = self._data[ds][d]
         return result
 
-    def update_doc(self, key: DocKeyType = _default_doc_key, val: Optional[DocValDict] = None) -> List[DocKeyPair]:
+    def update_doc(self, key: DocKeyType = DEFAULT_DOC_KEY, val: Optional[DocValDict] = None) -> List[DocKeyPair]:
         if val is None:
             val = {}
 
@@ -150,7 +153,7 @@ class JSONDS(DocDataSource):
 
         return result
 
-    def delete_doc(self, key: DocKeyType = _default_doc_key) -> int:
+    def delete_doc(self, key: DocKeyType = DEFAULT_DOC_KEY) -> int:
         result = 0
         target = self._filter(key)
 
