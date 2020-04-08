@@ -9,8 +9,7 @@ from typing import Any, Dict, Text
 import networkx as nx
 import community
 import matplotlib.pyplot as plt
-from pyecharts.charts import Graph
-from pyecharts import options as opts
+from pyecharts.charts.basic_charts.graph import Graph
 from network_analysis.algorithm import linear_regression
 
 # 以下为系统中使用
