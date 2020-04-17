@@ -62,7 +62,7 @@ class ScopusRetrieval():
             formatted_output_json = json.dumps(output_json, indent=4)
             f.write(formatted_output_json)
 
-    def parse_raw(self, raw) -> None:
+    def parse_raw(self, raw) -> tg.Dict:
         # the specific format translate function.
         # if a key of the dict doesn't exist, return None instead of raising an error.
         raw_dd = collections.defaultdict(int)
@@ -128,8 +128,10 @@ class ScopusRetrieval():
 
     def get_doi_list(self) -> tg.List:
         # 返回所有检索到的文档的doi，为接下来获取元数据做准备
-        doi_list = []
+        self.doi_list = []
         for res in self.results:
+            if self.num_result >= 0 and len(self.doi_list) >= self.num_result:
+                break
             doi = res['prism:doi']
-            doi_list.append(doi)
-        return doi_list
+            self.doi_list.append(doi)
+        return self.doi_list

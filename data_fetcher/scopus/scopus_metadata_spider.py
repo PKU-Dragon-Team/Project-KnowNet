@@ -1,7 +1,9 @@
-# scopus_fulltext_spider.py
+# scopus_metadata_spider.py
 
 from ..dependencies.elsapy.elsclient import ElsClient
 from ..dependencies.elsapy.elsdoc import AbsDoc
+from data_platform.datasource.mongodb import MongoDBDS
+from data_fetcher.id_manager import IDManager
 
 import json
 import typing as tg
@@ -14,9 +16,10 @@ class ScopusMetadataSpider(object):
     # 通过调用Elsevier的abstract API检索指定doi的元数据。
     def __init__(
         self,
-        doi,
-        paper_id_manager,
+        doi: tg.Text,
+        paper_id_manager: IDManager,
         config='./data_fetcher/scopus/config.json',
+        paper_set: tg.Text = None
     ) -> None:
 
         # 初始化这个类，传入要获取元数据的doi
@@ -31,11 +34,13 @@ class ScopusMetadataSpider(object):
         self.doc = AbsDoc(uri='https://api.elsevier.com/content/abstract/doi/' + doi)
 
         self._paper_id_manager = paper_id_manager
+        self.paper_set = paper_set
 
     def execute(self) -> tg.Dict:
         # 调用接口获取API，并解析，返回符合Project-Knownet格式的解析结果
         self.data = self.read()
-        return self.parse()
+        self.parsed_data = self.parse()
+        return self.parsed_data
 
     def read(self) -> tg.Union[tg.Dict, None]:
         succ = self.doc.read(els_client=self._client)
@@ -43,6 +48,10 @@ class ScopusMetadataSpider(object):
             return self.doc._data
         else:
             return None
+
+    def save(self, dbms: MongoDBDS):
+        '''将解析后的元数据通过dbms存储在数据库中'''
+        dbms.save_metadata(metadata=self.parsed_data, paper_set=self.paper_set)
 
     def parse(self) -> tg.Dict:
         # 如果获取的是摘要，返回的json中（即self.data）有作者信息和引文信息。
@@ -149,6 +158,8 @@ class ScopusMetadataSpider(object):
                         author['address'] = address
                         author['nationality'] = nationality
                         author['organization'] = organization
+                        author['orcid'] = None
+                        author['middleName'] = None
                         authors.append(author)
                 except Exception:
                     pass
@@ -219,6 +230,10 @@ class ScopusMetadataSpider(object):
                 except Exception:
                     reference['volume'] = None
 
+                none_keys = ('month', 'issue', 'type')
+                for none_key in none_keys:
+                    reference[none_key] = None
+
                 try:
                     ref_authors_raw = ref['ref-info']['ref-authors']['author']
                 except Exception:
@@ -242,6 +257,10 @@ class ScopusMetadataSpider(object):
                             ref_author['lastName'] = au['ce:surname']
                         except Exception:
                             ref_author['lastName'] = None
+
+                        none_keys = ('isCorrespondingAuthor', 'firstName', 'middleName', 'orcid', 'address', 'nationality', 'organization')
+                        for none_key in none_keys:
+                            ref_author[none_key] = None
 
                         ref_authors.append(ref_author)
                 except Exception:
@@ -273,6 +292,7 @@ class ScopusMetadataSpider(object):
 
         # 最后返回一个dict，表示解析出的结果
         return {
+            'source': 'Scopus',
             'id': id_,
             'title': title,
             'abstract': abstract,
@@ -284,8 +304,10 @@ class ScopusMetadataSpider(object):
             'volume': pub_volume,
             'issue': pub_issue,
             'doi': self.doi,
+            'uri': None,    # 在获取全文前先将uri设为None
             'authorCount': author_count,
             'authors': authors,
             'referencesCount': referencesCount,
             'references': references,
+            'content': None     # 在解析全文前先将content设为None
         }

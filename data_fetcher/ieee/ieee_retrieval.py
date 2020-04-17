@@ -1,4 +1,7 @@
 # ieee_retrieval.py
+from data_platform.datasource.mongodb import MongoDBDS
+from data_fetcher.id_manager import IDManager
+
 import typing as tg
 import math
 import json
@@ -11,11 +14,12 @@ class IEEERetrieval():
     # 实现方式是模拟用户向ieeexplore发出检索请求，而不是调用API
     def __init__(
         self,
-        query,
-        paper_id_manager,
-        offset=0,             # 偏移量。即从第几个开始获取
-        num_result=-1,        # 获取多少元数据。-1表示所有的。
-        request_interval=5    # 两次请求之间的时间间隔
+        query: tg.Text,
+        paper_id_manager: IDManager,
+        offset: int = 0,             # 偏移量。即从第几个开始获取
+        num_result: int = -1,        # 获取多少元数据。-1表示所有的。
+        request_interval: int = 5,   # 两次请求之间的时间间隔
+        paper_set: tg.Text = None     # 本次检索所得元数据要添加到的paper_set名称
     ) -> None:
 
         self.query = query
@@ -23,6 +27,7 @@ class IEEERetrieval():
         self._offset = offset
         self._num_result = num_result
         self._interval = request_interval
+        self.paper_set = paper_set
 
     def retrieve(self) -> None:
         '''发送检索请求，将请求响应（解析前的json文件）以dict格式
@@ -70,8 +75,6 @@ class IEEERetrieval():
                 payload_data_json = json.dumps(payload_data)
 
                 response = requests.post(post_url, json=data, headers=headers, data=payload_data_json)
-                response.raise_for_status()
-
                 records = response.json()['records']
                 self.retrieve_results.extend(records)
 
@@ -81,15 +84,23 @@ class IEEERetrieval():
         print('finished crawling metadata pages.')
         print('and get metadata of %d papers' % len(self.retrieve_results))
 
+        # 将爬到的数据解析，返回解析结果
+        self.parse()
+        return self.parsed_results
+
     def parse(self) -> tg.Dict:
         '''将retrieve()获取的self.retrieve_results解析成Project-KnowNet系统格式'''
         self.parsed_results = []
-        for result in self.retrieve_results:
+        for idx, result in enumerate(self.retrieve_results):
+            if self._num_result >= 0 and idx >= self._num_result:     # 我们只需要前num_request个元数据结果
+                break
+
             parsed_result = {}
 
             # 1. 将所有key之间有直接一一对应关系的解析出来
             keys_map = [    # (系统中字段名, 检索结果元数据中字段名)
                 ('title', 'articleTitle'),
+                ('IEEEArticleNumber', 'articleNumber'),
                 ('abstract', 'abstract'),
                 ('publication', 'publicationTitle'),
                 ('year', 'publicationYear'),
@@ -144,6 +155,11 @@ class IEEERetrieval():
                             parsed_author[parsed_key] = None
                     parsed_author['order'] = idx + 1
 
+                    # 将解析不到的作者字段设为None
+                    none_keys = ('isCorrespondingAuthor', 'orcid', 'address', 'nationality', 'organization')
+                    for none_key in none_keys:
+                        parsed_author[none_key] = None
+
                     parsed_result['authors'].append(parsed_author)
                 parsed_result['authorCount'] = len(parsed_result['authors'])
 
@@ -154,8 +170,23 @@ class IEEERetrieval():
             parsed_result['id'] = self._paper_id_manager.get_id(parsed_result['title'])
             self.parsed_results.append(parsed_result)
 
+            # 5. 设置一些其它字段
+            parsed_result['source'] = 'IEEE'
+            none_keys = ('uri', 'content', 'keywords', 'month')
+            for none_key in none_keys:
+                parsed_result[none_key] = None
+
         # 只要解析并返回用户需要的从offset开始的前num_result个结果就好了。
         self.parsed_results = self.parsed_results[self._offset % 100:]
         if self._num_result > 0:
             self.parsed_results = self.parsed_results[: self._num_result]
         return self.parsed_results
+
+    def save(self, dbms: MongoDBDS) -> None:
+        '''将解析后的元数据通过dbms存储在数据库中
+        由于IEEE检索获取的元数据是一个list，因此将其中每个doc分别调用一次存储'''
+        for parsed_result in self.parsed_results:
+            self._save_one(dbms, parsed_result)
+
+    def _save_one(self, dbms: MongoDBDS, parsed_result: dict) -> None:
+        dbms.save_metadata(metadata=parsed_result, paper_set=self.paper_set)

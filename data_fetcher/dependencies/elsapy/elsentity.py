@@ -23,6 +23,7 @@ class ElsEntity(metaclass=ABCMeta):
         self._uri = uri
         self._data = None
         self._client = None
+        self._err_msg = []
 
     # properties
     @property
@@ -86,6 +87,7 @@ class ElsEntity(metaclass=ABCMeta):
         except (requests.HTTPError, requests.RequestException) as e:
             for elm in e.args:
                 logger.warning(elm)
+                self._err_msg.append(elm)
             return False
 
     def write(self):
