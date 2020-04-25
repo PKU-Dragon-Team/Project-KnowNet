@@ -10,8 +10,6 @@ try:
 except ImportError:
     raise ImportError('This data source requires pymongo to be installed.')
 
-import logging
-
 
 class MongoDBDS(DocDataSource):
     '''MongoDB datasource class'''
@@ -162,7 +160,7 @@ class MongoDBDS(DocDataSource):
         try:
             collection.insert_one({'_id': d, 'sequence_value': int(init_v)})
         except pymongo.errors.DuplicateKeyError:
-            logging.info('auto increasement value %s already set.' % str(d))
+            logging.info('auto increasement value %s already set.', d)
 
     def get_next_value(self, key: DocKeyPair) -> int:
         '''从指定的collection和key中获取一个自增变量的值并将其+1。
@@ -208,7 +206,7 @@ class MongoDBDS(DocDataSource):
     def delete_collections(self, docsets: List[Text]) -> None:
         '''---删除数据库中指定的collection---'''
         collection_names = self._mongodb.list_collection_names()
-        logging.info('collections before cleaning: %s' % str(collection_names))
+        logging.info('collections before cleaning: %s', ', '.join(collection_names))
         for collection_name in collection_names:
             if collection_name in docsets:
                 db_collection = self._mongodb[collection_name]
@@ -223,7 +221,7 @@ class MongoDBDS(DocDataSource):
         id_ = metadata['id']
         ret = self.get_doc_by_id(DocIdPair(docset, id_))
         if ret is not None:
-            logging.info('metadata with id = %d already exists.' % id_)
+            logging.info('metadata with id = %d already exists.', id_)
         else:
             self.insert_one(docset, id_, metadata)
 
@@ -232,12 +230,12 @@ class MongoDBDS(DocDataSource):
             logging.info('No need to add into paper_set.')
             return
 
-        logging.info('adding paper with id %d in paper_set %s' % (id_, paper_set))
+        logging.info('adding paper with id %d in paper_set %s', id_, paper_set)
         paper_set_col: pymongo.collection.Collection = self._mongodb['paper_set']
         ret = paper_set_col.find_one({'set_name': paper_set})
         if ret is None:
             # 这个paper_set不存在，创建一个新的paper_set
-            logging.info('paper_set %s not found, creating a new one.' % paper_set)
+            logging.info('paper_set %s not found, creating a new one.', paper_set)
             paper_set_col.insert_one({
                 'set_name': paper_set,
                 'paper': []

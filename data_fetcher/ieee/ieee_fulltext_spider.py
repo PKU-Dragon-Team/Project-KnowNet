@@ -3,6 +3,7 @@ import requests
 import time
 import re
 import logging
+import os
 
 
 class IEEEFulltextSpider(object):
@@ -63,6 +64,8 @@ class IEEEFulltextSpider(object):
 
         try:
             u = requests.get(pdf_url)
+            if not os.path.exists(self.output_path):
+                os.makedirs(self.output_path)
             with open(self.output_path + self.filename, 'wb') as f:
                 f.write(u.content)
         except Exception as e:

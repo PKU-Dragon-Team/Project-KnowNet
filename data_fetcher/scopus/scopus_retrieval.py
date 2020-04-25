@@ -2,7 +2,6 @@
 
 import json
 import urllib.parse
-import collections
 import typing as tg
 import logging
 
@@ -14,10 +13,10 @@ class ScopusRetrieval():
     # 根据检索词query调用API进行检索，保存一些包括doi在内的简单的元数据。
     # 更全面的元数据可以通过ScopusMetadataSpider调用Elsevier摘要API获取。
     def __init__(
-        self,
-        query,
-        num_result=-1,      # Get the first num_result results. -1 for all. No greater than 5000.
-        config='./data_fetcher/scopus/config.json'
+            self,
+            query,
+            num_result=-1,      # Get the first num_result results. -1 for all. No greater than 5000.
+            config='./data_fetcher/scopus/config.json'
     ) -> None:
         # output_filename: the file to store the metadata result. [query]_metadata.json for default.
 
@@ -35,7 +34,7 @@ class ScopusRetrieval():
         self._client.inst_token = config['insttoken']
 
         self._total_num_res = None
-        self._results = None
+        self._results: tg.List[tg.Dict] = []
         self._doi_list: tg.List[str] = []
         # the spider pipeline: retrieve the query -> parse the result
         # self.retrieve()
@@ -48,7 +47,7 @@ class ScopusRetrieval():
         els_search.execute(self._client, num_result=self.num_result)
         self._total_num_res = els_search.tot_num_res
         self._results = els_search.results
-        logging.info('Number of results got with query %s: %d' % (self.query, len(self._results)))
+        logging.info('Number of results got with query %s: %d', self.query, len(self._results))
 
     def get_doi_list(self) -> tg.List:
         # 返回所有检索到的文档的doi，为接下来获取元数据做准备

@@ -1,22 +1,21 @@
 # scopus_metadata_spider.py
 import json
 import typing as tg
-import logging
 
-from ..dependencies.elsapy.elsclient import ElsClient
-from ..dependencies.elsapy.elsdoc import AbsDoc
 from data_platform.datasource.mongodb import MongoDBDS
 from data_fetcher.id_manager import IDManager
+from ..dependencies.elsapy.elsclient import ElsClient
+from ..dependencies.elsapy.elsdoc import AbsDoc
 
 
 class ScopusMetadataSpider:
     # 通过调用Elsevier的abstract API检索指定doi的元数据。
     def __init__(
-        self,
-        doi: tg.Text,
-        paper_id_manager: IDManager,
-        config='./data_fetcher/scopus/config.json',
-        paper_set: tg.Text = None
+            self,
+            doi: tg.Text,
+            paper_id_manager: IDManager,
+            config='./data_fetcher/scopus/config.json',
+            paper_set: tg.Text = None
     ) -> None:
 
         # 初始化这个类，传入要获取元数据的doi
@@ -42,19 +41,11 @@ class ScopusMetadataSpider:
         self.parsed_data = self.parse()
         return self.parsed_data
 
-    def read(self) -> tg.Optional[tg.Dict]:
+    def read(self) -> tg.Dict:
         succ = self.doc.read(els_client=self._client)
         if succ:
             return self.doc.data
-        return None
-
-    def save(self, dbms: MongoDBDS):
-        '''将解析后的元数据通过dbms存储在数据库中'''
-        dbms.save_metadata(metadata=self.parsed_data, paper_set=self.paper_set)
-
-    def save(self, dbms: MongoDBDS):
-        '''将解析后的元数据通过dbms存储在数据库中'''
-        dbms.save_metadata(metadata=self.parsed_data, paper_set=self.paper_set)
+        return {}
 
     def save(self, dbms: MongoDBDS):
         '''将解析后的元数据通过dbms存储在数据库中'''
@@ -181,7 +172,9 @@ class ScopusMetadataSpider:
             au_set = list(set(au_list))
             author_count = len(au_set)
         except (KeyError, TypeError, IndexError):
-            author_count = None
+            author_count = -1
+            # 这里为什么写-1而不是None呢？因为写None通过不了pylint的代码审查，pylint认为author_count这个变量应该是int型的。
+            # 因此只能暂时用-1赋值，后面再另行处理...
 
         # 5. 解析摘要内容
         try:
@@ -296,7 +289,7 @@ class ScopusMetadataSpider:
         id_ = self._paper_id_manager.get_id(title)
 
         # 最后返回一个dict，表示解析出的结果
-        return {
+        ret = {
             'source': 'Scopus',
             'id': id_,
             'title': title,
@@ -316,3 +309,7 @@ class ScopusMetadataSpider:
             'references': references,
             'content': None     # 在解析全文前先将content设为None
         }
+
+        if ret['authorCount'] == -1:
+            ret['authorCount'] = None
+        return ret
