@@ -10,6 +10,8 @@ try:
 except ImportError:
     raise ImportError('This data source requires pymongo to be installed.')
 
+import logging
+
 
 class MongoDBDS(DocDataSource):
     '''MongoDB datasource class'''

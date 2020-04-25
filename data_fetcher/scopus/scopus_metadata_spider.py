@@ -56,6 +56,10 @@ class ScopusMetadataSpider:
         '''将解析后的元数据通过dbms存储在数据库中'''
         dbms.save_metadata(metadata=self.parsed_data, paper_set=self.paper_set)
 
+    def save(self, dbms: MongoDBDS):
+        '''将解析后的元数据通过dbms存储在数据库中'''
+        dbms.save_metadata(metadata=self.parsed_data, paper_set=self.paper_set)
+
     def parse(self) -> tg.Dict:
         # 如果获取的是摘要，返回的json中（即self.data）有作者信息和引文信息。
         # 从结果中将这些内容解析出来，并作为返回值返回

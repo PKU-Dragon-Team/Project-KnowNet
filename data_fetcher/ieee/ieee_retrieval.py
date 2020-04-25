@@ -89,6 +89,10 @@ class IEEERetrieval():
         self.parse()
         return self.parsed_results
 
+        # 将爬到的数据解析，返回解析结果
+        self.parse()
+        return self.parsed_results
+
     def parse(self) -> tg.Dict:
         '''将retrieve()获取的self.retrieve_results解析成Project-KnowNet系统格式'''
         self.parsed_results = []
