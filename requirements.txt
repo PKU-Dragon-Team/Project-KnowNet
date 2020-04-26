@@ -17,3 +17,4 @@ python-louvain
 rake-nltk
 textblob
 yapf
+pdfplumber
