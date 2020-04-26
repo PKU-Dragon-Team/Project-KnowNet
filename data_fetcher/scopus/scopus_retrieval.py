@@ -1,23 +1,22 @@
 # scopus_metadata_spider.py
 
-from ..dependencies.elsapy.elsclient import ElsClient
-from ..dependencies.elsapy.elssearch import ElsSearch
 import json
 import urllib.parse
-
-import collections
 import typing as tg
+import logging
+
+from ..dependencies.elsapy.elssearch import ElsSearch
+from ..dependencies.elsapy.elsclient import ElsClient
 
 
 class ScopusRetrieval():
     # 根据检索词query调用API进行检索，保存一些包括doi在内的简单的元数据。
     # 更全面的元数据可以通过ScopusMetadataSpider调用Elsevier摘要API获取。
     def __init__(
-        self,
-        query,
-        num_result=-1,                             # Get the first num_result results. -1 for all. No greater than 5000.
-        output_filename='retrieval_result.json',    # The file to store the Project-Knownet formatted metadata.
-        config='./data_fetcher/scopus/config.json'
+            self,
+            query,
+            num_result=-1,      # Get the first num_result results. -1 for all. No greater than 5000.
+            config='./data_fetcher/scopus/config.json'
     ) -> None:
         # output_filename: the file to store the metadata result. [query]_metadata.json for default.
 
@@ -31,11 +30,12 @@ class ScopusRetrieval():
 
         self.num_result = num_result
 
-        self.output_filename = output_filename
-
         self._client = ElsClient(config['apikey'])
         self._client.inst_token = config['insttoken']
 
+        self._total_num_res = None
+        self._results: tg.List[tg.Dict] = []
+        self._doi_list: tg.List[str] = []
         # the spider pipeline: retrieve the query -> parse the result
         # self.retrieve()
         # self.parse()
@@ -46,90 +46,15 @@ class ScopusRetrieval():
         els_search = ElsSearch(self.query, index='scopus')
         els_search.execute(self._client, num_result=self.num_result)
         self._total_num_res = els_search.tot_num_res
-        self.results = els_search.results
-        print('Number of results got with query', self.query, ':', len(self.results))
-
-    def parse(self) -> None:
-        # parse the results from ElsSearch to the json format we defined
-        # and dump into a json file.
-        output_json = []
-        for i in range(len(self.results)):
-            raw = self.results[i]
-            parsed = self.parse_raw(raw)
-            output_json.append(parsed)
-
-        with open(self.output_filename, 'w', encoding='utf-8') as f:
-            formatted_output_json = json.dumps(output_json, indent=4)
-            f.write(formatted_output_json)
-
-    def parse_raw(self, raw) -> None:
-        # the specific format translate function.
-        # if a key of the dict doesn't exist, return None instead of raising an error.
-        raw_dd = collections.defaultdict(int)
-        for k in raw:
-            raw_dd[k] = raw[k]
-
-        parsed = {
-            'source': 'scopus',
-            'spiderID': None,
-            'id': None,
-            'title': raw_dd['dc:title'],
-            'abstract': None,
-            'keywords': None,
-            'type': None,
-            'publication': raw_dd['prism:publicationName'],
-            'volume': raw_dd['prism:volume'],
-            'issue': raw_dd['prism:issue'],
-            'doi': raw_dd['prism:doi'],
-            'uri': None,
-            'authorCount': 0,
-            'authors': []
-        }
-
-        # resolve publish year & month from prism:coverDate field
-        try:
-            parsed['year'] = raw_dd['prism:coverDate'].split('-')[0]
-        except IndexError:
-            parsed['year'] = None
-
-        try:
-            parsed['month'] = raw_dd['prism:coverDate'].split('-')[1]
-        except IndexError:
-            parsed['year'] = None
-
-        try:
-            if isinstance(raw_dd['authors']['author'], list) or isinstance(raw_dd['authors']['author'], dict):
-                for idx, au in enumerate(raw_dd['authors']['author']):
-                    if isinstance(au, dict):
-                        au = au['$']
-                    new_author = {
-                        'id': None,
-                        'order': idx + 1,
-                        'isCorrespondingAuthor': None,
-                        'normalizedName': au,
-                    }
-                    parsed['authors'].append(new_author)
-                parsed['authorCount'] = len(parsed['authors'])
-
-            else:
-                new_author = {
-                    'id': None,
-                    'order': 1,
-                    'correspondingAuthor': None,
-                    'normalizedName': raw_dd['authors']['author'],
-                }
-                parsed['authors'].append(new_author)
-                parsed['authorCount'] = len(parsed['authors'])
-
-        except Exception:
-            pass
-
-        return parsed
+        self._results = els_search.results
+        logging.info('Number of results got with query %s: %d', self.query, len(self._results))
 
     def get_doi_list(self) -> tg.List:
         # 返回所有检索到的文档的doi，为接下来获取元数据做准备
-        doi_list = []
-        for res in self.results:
+        self._doi_list = []
+        for res in self._results:
+            if self.num_result >= 0 and len(self._doi_list) >= self.num_result:
+                break
             doi = res['prism:doi']
-            doi_list.append(doi)
-        return doi_list
+            self._doi_list.append(doi)
+        return self._doi_list

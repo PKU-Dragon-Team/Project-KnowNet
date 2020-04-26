@@ -118,3 +118,4 @@ output/
 config/
 .knownet.json
 /.vs
+data_fetcher/scopus/config.json

@@ -23,6 +23,7 @@ class ElsEntity(metaclass=ABCMeta):
         self._uri = uri
         self._data = None
         self._client = None
+        self._err_msg = []
 
     # properties
     @property
@@ -61,6 +62,11 @@ class ElsEntity(metaclass=ABCMeta):
         """Set the elsClient instance to be used by thisentity instance"""
         self._client = elsClient
 
+    @property
+    def err_msg(self):
+        """Get the error messages"""
+        return self._err_msg
+
     # modifier functions
     @abstractmethod
     def read(self, payloadType, elsClient):
@@ -86,6 +92,7 @@ class ElsEntity(metaclass=ABCMeta):
         except (requests.HTTPError, requests.RequestException) as e:
             for elm in e.args:
                 logger.warning(elm)
+                self._err_msg.append(elm)
             return False
 
     def write(self):

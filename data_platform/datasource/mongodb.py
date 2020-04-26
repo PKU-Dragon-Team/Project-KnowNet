@@ -1,4 +1,5 @@
 from typing import Dict, List, Text, Union
+import logging
 
 from ..config import ConfigManager
 from .abc.doc import DocDataSource, DocKeyPair, DocKeyType, DocValDict, DocKeyVal, DocIdPair
@@ -159,7 +160,7 @@ class MongoDBDS(DocDataSource):
         try:
             collection.insert_one({'_id': d, 'sequence_value': int(init_v)})
         except pymongo.errors.DuplicateKeyError:
-            print('auto increasement value', d, 'already set.')
+            logging.info('auto increasement value %s already set.', d)
 
     def get_next_value(self, key: DocKeyPair) -> int:
         '''从指定的collection和key中获取一个自增变量的值并将其+1。
@@ -185,7 +186,7 @@ class MongoDBDS(DocDataSource):
         ret = collection.find_one({'_id': id_})
         return ret
 
-    def insert_one(self, id_, docset: Text, val: DocValDict) -> int:
+    def insert_one(self, docset: Text, id_, val: DocValDict) -> int:
         '''在名为docset的collection中插入val文件，并将其_id设为id_。
         返回插入doc的_id'''
         collection: pymongo.collection.Collection = self._mongodb[docset]
@@ -194,11 +195,53 @@ class MongoDBDS(DocDataSource):
         ret = collection.insert_one(val_dup).inserted_id
         return ret
 
+    def query_and_update_doc(self, docset: Text, query: dict, val: dict) -> int:
+        '''在docset中找到符合query的结果，并用val更新它们。
+        相当于UPDATE docset set val.keys() = val.values() WHERE query.keys() = query.values()
+        返回修改的记录数量。'''
+        collection: pymongo.collection.Collection = self._mongodb[docset]
+        ret = collection.update_many(query, val)
+        return ret.modified_count
+
     def delete_collections(self, docsets: List[Text]) -> None:
         '''---删除数据库中指定的collection---'''
         collection_names = self._mongodb.list_collection_names()
-        print('collections before cleaning:', collection_names)
+        logging.info('collections before cleaning: %s', ', '.join(collection_names))
         for collection_name in collection_names:
             if collection_name in docsets:
                 db_collection = self._mongodb[collection_name]
                 db_collection.drop()
+
+    def save_metadata(self, docset: Text = 'metadata', metadata: dict = None, paper_set: Text = None) -> None:
+        '''接收元数据爬虫发来的存储元数据请求，
+        将其存储在metadata集合中'''
+        if metadata is None:
+            return
+        # 先通过id检查这个doc是否已经存在。如果存在就直接返回，如果不存在，就将这个doc插入集合中
+        id_ = metadata['id']
+        ret = self.get_doc_by_id(DocIdPair(docset, id_))
+        if ret is not None:
+            logging.info('metadata with id = %d already exists.', id_)
+        else:
+            self.insert_one(docset, id_, metadata)
+
+        # 将新文献对应的id加入到对应的paper_set中
+        if paper_set is None:
+            logging.info('No need to add into paper_set.')
+            return
+
+        logging.info('adding paper with id %d in paper_set %s', id_, paper_set)
+        paper_set_col: pymongo.collection.Collection = self._mongodb['paper_set']
+        ret = paper_set_col.find_one({'set_name': paper_set})
+        if ret is None:
+            # 这个paper_set不存在，创建一个新的paper_set
+            logging.info('paper_set %s not found, creating a new one.', paper_set)
+            paper_set_col.insert_one({
+                'set_name': paper_set,
+                'paper': []
+            })
+
+        papers = list(paper_set_col.find_one({'set_name': paper_set})['paper'])
+        if id_ not in papers:
+            papers.append(id_)
+        paper_set_col.update_one({'set_name': paper_set}, {'$set': {'paper': papers}})
