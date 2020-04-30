@@ -4,6 +4,7 @@ import time
 import re
 import logging
 import os
+import typing as tg
 
 
 class IEEEFulltextSpider(object):
@@ -12,8 +13,8 @@ class IEEEFulltextSpider(object):
     def __init__(
         self, article_number,
         filename=None,
-        output_path='./data/IEEE_PDF/',
-        log_file='./data/ieee_fulltext_spider_log.txt',
+        output_path='../data/pdf_files/',
+        log_file='../data/ieee_fulltext_spider_log.txt',
         request_interval=10      # 两次请求之间的时间间隔，建议在10s以上
     ) -> None:
         self._headers = {
@@ -47,7 +48,7 @@ class IEEEFulltextSpider(object):
         fh.setFormatter(format_str)
         self._logger.addHandler(fh)
 
-    def execute(self) -> bool:
+    def execute(self) -> tg.Optional[str]:
         '''爬取PDF。第一个post是为了获取重定位到的pdf的url，第二个get是为了访问这个url。
         NOTE: 发送get请求前先sleep，是为了防止爬的速度太快。
         全文内容反爬限制很严格，强烈建议两个请求之间间隔至少10秒！
@@ -60,7 +61,7 @@ class IEEEFulltextSpider(object):
             pdf_url = re.findall(r'https://.+\.pdf', self._response.text)[0]
         except Exception as e:
             self._logger.error('IEEEFulltextSpider, articleNumber = %s, PDF URL not found. Exception: %s' % (self.article_number, str(e)))
-            return False
+            return None
 
         try:
             u = requests.get(pdf_url)
@@ -70,6 +71,6 @@ class IEEEFulltextSpider(object):
                 f.write(u.content)
         except Exception as e:
             self._logger.error('IEEEFulltextSpider, articleNumber = %s error when downloading PDF. Exception: %s' % (self.article_number, str(e)))
-            return False
+            return None
 
         return self.output_path + self.filename

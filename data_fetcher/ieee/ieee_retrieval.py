@@ -30,10 +30,10 @@ class IEEERetrieval():
         self._interval = request_interval
         self.paper_set = paper_set
 
-    def retrieve(self) -> None:
+    def retrieve(self) -> tg.List:
         '''发送检索请求，将请求响应（解析前的json文件）以dict格式
         记录在self.retrieve_results'''
-        start_page = math.floor(self._offset / 100)     # 检索结果中每页有100篇文献
+        start_page = int(math.floor(self._offset / 100))     # 检索结果中每页有100篇文献
         if self._num_result == -1:
             end_page = 10000000000
         else:
@@ -89,11 +89,7 @@ class IEEERetrieval():
         self.parse()
         return self.parsed_results
 
-        # 将爬到的数据解析，返回解析结果
-        self.parse()
-        return self.parsed_results
-
-    def parse(self) -> tg.Dict:
+    def parse(self) -> tg.List:
         '''将retrieve()获取的self.retrieve_results解析成Project-KnowNet系统格式'''
         self.parsed_results = []
         for idx, result in enumerate(self.retrieve_results):
